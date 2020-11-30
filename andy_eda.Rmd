@@ -1,0 +1,45 @@
+---
+title: "101C Final EDA"
+author: "Andy Shen"
+date: "11/30/2020"
+output: pdf_document
+---
+
+```{r}
+training <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/training.csv")
+test <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/test.csv")
+```
+
+
+```{r}
+ind <- sample(1:nrow(training), size = floor(0.8 * nrow(training)), replace = F)
+train <- training[ind, ]
+ttest <- training[-ind, ]
+```
+
+```{r}
+find_MSE <- function(data, preds) {
+  if(length(preds) != length(data$growth_2_6)) {
+    stop("Something is wrong here...")
+  }
+  sqrt(
+    sum((data$growth_2_6 - preds)^2) / length(preds)
+  )
+}
+```
+
+
+
+```{r}
+m <- glm(growth_2_6 ~ 
+          hog_81 + avg_growth_mid_high + num_words  + count_vids_mid_high, 
+        data = train)
+summary(m)
+```
+
+
+```{r}
+p <- predict(m, ttest)
+find_MSE(ttest, p)
+```
+
