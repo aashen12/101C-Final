@@ -1,0 +1,55 @@
+---
+title: "Model 1"
+author: "Ethan Allavarpu, Andy Shen"
+date: "11/30/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA)
+```
+
+```{r}
+training <- read.csv("training.csv", stringsAsFactors = FALSE)
+# plot(growth_2_6 ~ ., data = training)
+any(is.na(training))
+var_types <- vapply(training, class, character(1))
+names(training)[-which(var_types %in% c("integer", "numeric"))]
+```
+
+```{r}
+dates <- training$PublishedDate
+head(dates)
+split_dates <- strsplit(dates, "[:/ ]")
+head(split_dates)
+split_dates <- lapply(split_dates, as.numeric)
+years <- function(date) {
+  date[3]
+}
+yrs <- lapply(split_dates, years)
+unique(yrs)  # Only 2020
+new_time <- function(old_date) {
+  old_date <- as.numeric(old_date)
+  month <- old_date[1]
+  day <- old_date[2]
+  hr <- old_date[4]
+  minute <- old_date[5]
+  month_days <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+  complete_months <- month - 1
+  if (complete_months > 0) {
+    complete_month_days <- sum(month_days[1:complete_months])
+  } else {
+    complete_month_days <- 0
+  }
+  total_days <- complete_month_days + day
+  pre_hrs <- total_days * 24
+  total_hrs <- pre_hrs + hr
+  pre_min <- total_hrs * 60
+  final_time <- pre_min + minute 
+  final_time
+}
+processed_dates <- vapply(split_dates, new_time, numeric(1))
+training$PublishedDate <- processed_dates
+```
+
+
