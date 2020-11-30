@@ -5,6 +5,14 @@ date: "11/30/2020"
 output: pdf_document
 ---
 
+```{r, message=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(BASS)
+library(TBASS)
+```
+
+
 ```{r}
 training <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/training.csv")
 test <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/test.csv")
@@ -13,33 +21,29 @@ test <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/test.csv")
 
 ```{r}
 ind <- sample(1:nrow(training), size = floor(0.8 * nrow(training)), replace = F)
-train <- training[ind, ]
+train <- training[ind,] 
+train_resp <- train$growth_2_6
+train_preds <- train %>% select(-growth_2_6, -PublishedDate)
 ttest <- training[-ind, ]
 ```
 
+
 ```{r}
-find_MSE <- function(data, preds) {
-  if(length(preds) != length(data$growth_2_6)) {
-    stop("Something is wrong here...")
-  }
-  sqrt(
-    sum((data$growth_2_6 - preds)^2) / length(preds)
-  )
-}
+b <- bass(train_preds, train_resp)
 ```
 
 
 
 ```{r}
-m <- glm(growth_2_6 ~ 
-          hog_81 + avg_growth_mid_high + num_words  + count_vids_mid_high, 
-        data = train)
-summary(m)
+plot(b)
 ```
 
 
 ```{r}
-p <- predict(m, ttest)
-find_MSE(ttest, p)
+testp <- ttest %>% select(-growth_2_6, -PublishedDate)
+p <- predict(b, testp)
+print(
+  RMSE <- sqrt(mean(sum(ttest$growth_2_6 - p)^2))
+)
 ```
 
