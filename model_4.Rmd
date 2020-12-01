@@ -1,5 +1,5 @@
 ---
-title: "Model 3"
+title: "Model 4"
 author: "Ethan Allavarpu, Andy Shen"
 date: "11/30/2020"
 output: pdf_document
@@ -85,8 +85,8 @@ set.seed(1)
 library(glmnet)
 for (i in seq_len(10)) {
   data_split <- sample(nrow(training), nrow(training) * 0.8)
-  train <- training[data_split, !(names(training) %in% corr_vars)]
-  validation <- training[-data_split, !(names(training) %in% corr_vars)]
+  train <- training[data_split, ]
+  validation <- training[-data_split, ]
   train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
   train_y <- train$growth_2_6
   test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
@@ -96,7 +96,7 @@ for (i in seq_len(10)) {
   salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
                                lambda = lambda_grid, standardize = TRUE,
                                nfolds = 10)
-  lambda_1se <- salary_lasso_cv$lambda.1se
+  lambda_1se <- salary_lasso_cv$lambda.min
   lasso_test_preds <- predict(salary_lasso, newx = test_x, s = lambda_1se)
   val_mses[i] <- mean((lasso_test_preds - validation$growth_2_6)^2)
 }
@@ -114,23 +114,26 @@ salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
 salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
                                lambda = lambda_grid, standardize = TRUE,
                                nfolds = 10)
-lambda_1se <- salary_lasso_cv$lambda.1se
+lambda_1se <- salary_lasso_cv$lambda.min
 lasso_coefs <- predict(salary_lasso, newx = test_x,
                        s = lambda_1se, type = "coefficients")[, 1]
-keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
-keep_vars[51:57] <- c("Num_Subscribers_Base_low_mid", "Num_Views_Base_low_mid", "Num_Views_Base_mid_high",
-                      "avg_growth_low", "avg_growth_low_mid", "avg_growth_mid_high", "count_vids_low_mid")
+keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1][-1]
+```
+```{r}
+keep_vars[120:128] <- c("Num_Subscribers_Base_low","Num_Subscribers_Base_low_mid", "Num_Views_Base_low_mid",
+                        "Num_Views_Base_mid_high",
+                      "avg_growth_low", "avg_growth_low_mid", "avg_growth_mid_high", "count_vids_low", "count_vids_low_mid")
 ```
 
 ```{r}
 library(randomForest)
-set.seed(6)
+set.seed(123)
 train_bag <- train[, c(keep_vars, "growth_2_6")]
 # -1 from ncol() because one column is the response variable
 p <- ncol(train_bag) - 1 # Total number of predictors = 59
 p
 bag_tree <- randomForest(growth_2_6 ~ ., data = train_bag,
-                         mtry = floor(p / 3), ntree = 50)
+                         mtry = p, ntree = 500)
 bag_preds <- predict(bag_tree, newdata = validation)
 bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
 sqrt(bag_mse)
@@ -154,6 +157,5 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 248:259] <- factor_vars
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv <- data.frame(id = test$id, growth_2_6 = bag_test_preds)
-write.csv(test_csv, "model3predictions.csv", row.names = FALSE)
+write.csv(test_csv, "model4predictions.csv", row.names = FALSE)
 ```
-
