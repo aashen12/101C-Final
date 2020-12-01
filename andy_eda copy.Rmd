@@ -1,0 +1,68 @@
+---
+title: "101C Final EDA"
+author: "Andy Shen"
+date: "11/30/2020"
+output: pdf_document
+---
+
+```{r, message=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(BASS)
+library(TBASS)
+```
+
+
+```{r}
+training <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/training.csv")
+test <- read.csv("/Users/andyshen/Desktop/Git/101C-Final/test.csv")
+```
+
+```{r}
+dates <- training$PublishedDate
+head(dates)
+split_dates <- strsplit(dates, "[:/ ]")
+head(split_dates)
+split_dates <- lapply(split_dates, as.numeric)
+years <- function(date) {
+  date[3]
+}
+yrs <- lapply(split_dates, years)
+unique(yrs)  # Only 2020
+new_time <- function(old_date) {
+  old_date <- as.numeric(old_date)
+  month <- old_date[1]
+  day <- old_date[2]
+  hr <- old_date[4]
+  minute <- old_date[5]
+  month_days <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+  complete_months <- month - 1
+  if (complete_months > 0) {
+    complete_month_days <- sum(month_days[1:complete_months])
+  } else {
+    complete_month_days <- 0
+  }
+  total_days <- complete_month_days + day
+  pre_hrs <- total_days * 24
+  total_hrs <- pre_hrs + hr
+  pre_min <- total_hrs * 60
+  final_time <- pre_min + minute 
+  final_time
+}
+processed_dates <- vapply(split_dates, new_time, numeric(1))
+training$PublishedDate <- processed_dates
+```
+
+
+```{r}
+ind <- sample(1:nrow(training), size = floor(0.8 * nrow(training)), replace = F)
+train <- training[ind,] 
+ttest <- training[-ind, ]
+```
+
+
+```{r}
+d <- training %>% select(-contains("hog")) %>% select(-PublishedDate)
+plot(growth_2_6 ~ ., data = d, cex = 0.5, pch = 19)
+```
+
