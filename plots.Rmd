@@ -57,10 +57,10 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 training[, 248:259] <- factor_vars
 ```
 
-```{r, fig.height=7, fig.width=6}
+```{r, fig.height=4, fig.width=4}
 library(dplyr)
-par(mfrow = c(3, 3))
-plot(growth_2_6 ~ ., data = training %>% select(-contains("hog")),
+no_hog <- training %>% select(-contains("hog"))
+plot(growth_2_6 ~ ., data = no_hog,
      cex = 0.5, pch = 19, col = rgb(0, 0, 0, 0.1))
 ```
 
