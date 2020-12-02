@@ -73,8 +73,8 @@ corr_vars <- unique(rownames(cor_vars))
 
 ```{r}
 outlier <- function(data) {
-  low <- mean(data) - 1.21 * IQR(data)
-  high <- mean(data) + 1.21 * IQR(data)
+  low <- mean(data) - 1.5 * IQR(data)
+  high <- mean(data) + 1.5 * IQR(data)
   which(data < low | data > high)
 }
 outliers <- table(unlist(lapply(training[,-ncol(training)], outlier)))
@@ -131,13 +131,14 @@ lasso_coefs <- predict(salary_lasso, newx = test_x,
 keep_vars <- names(lasso_coefs)[lasso_coefs != 0]
 ```
 ```{r}
-keep_vars[134:143] <- c("Num_Subscribers_Base_low","Num_Subscribers_Base_low_mid",
+keep_vars[135:144] <- c("Num_Subscribers_Base_low",
+                        "Num_Subscribers_Base_low_mid",
+                        "Num_Subscribers_Base_mid_high",
                         "Num_Views_Base_low_mid", "Num_Views_Base_mid_high",
                         "avg_growth_low", "avg_growth_low_mid",
-                        "avg_growth_mid_high", "count_vids_low", 
-                        "count_vids_low_mid", "count_vids_mid_high")
+                        "avg_growth_mid_high", "count_vids_low",
+                        "count_vids_low_mid")
 keep_vars <- c(keep_vars, "Num_Views_Base_low")
-keep_vars <- keep_vars[-1][-1] # remove intercept and id
 ```
 
 ```{r}
@@ -193,7 +194,7 @@ plot(m_vals, rmses, type = "l")
 
 
 ```{r}
-set.seed(12)
+set.seed(127)
 data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
@@ -224,5 +225,6 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 248:259] <- factor_vars
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv <- data.frame(id = test$id, growth_2_6 = bag_test_preds)
-write.csv(test_csv, "model5Bpredictions.csv", row.names = FALSE)
+# write.csv(test_csv, "model5Bpredictions.csv", row.names = FALSE)
+# 5B had seed 12
 ```
