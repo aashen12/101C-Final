@@ -166,8 +166,8 @@ m_vals <- floor(seq(from = 1, to = p, length.out = 25))
 
 ```{r}
 library(leaps)
-best_sub <- regsubsets(growth_2_6 ~ ., data = train, method = "exhaustive",
-                       really.big = TRUE, intercept = TRUE)
+# best_sub <- regsubsets(growth_2_6 ~ ., data = train, method = "exhaustive",
+#                        really.big = TRUE, intercept = TRUE)
 
 forward_sel <- regsubsets(growth_2_6 ~ ., data = train, method = "forward",
                        really.big = FALSE)
@@ -180,16 +180,15 @@ sumB <- summary(backward_sel)
 
 
 ```{r}
-sumBS <- summary(best_sub)
-plot(sumBS$rsq, xlab = "Number of predictors", ylab = "RSq",
+# sumBS <- summary(best_sub)
+plot(sumB$rsq, xlab = "Number of predictors", ylab = "RSq",
      type = "l", col = "blue", main = 'Best Subset Selection')
 lines(sumF$rsq, col = "red")
-lines(sumB$rsq, col = "green")
 
-plot(sumBS$rss, xlab = "Number of predictors", ylab = "RSS",
+
+plot(sumB$rss, xlab = "Number of predictors", ylab = "RSS",
      type = "l", col = "blue")
 lines(sumF$rss, col = "red")
-lines(sumB$rss, col = "green")
 
 
 # Demo 2. We illustrate how to select the number of predictors using
@@ -199,34 +198,50 @@ lines(sumB$rss, col = "green")
 
 # Plot RSS
 par(mfrow=c(2,2))
-plot(sumBS$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
+plot(sumB$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
 # Plot Adjusted R^2, highlight max value
-plot(sumBS$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
-max = which.max(sumBS$adjr2)
-points(max, sumBS$adjr2[max], col = "red", cex = 2, pch = 20)
+plot(sumB$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+max = which.max(sumB$adjr2)
+points(max, sumB$adjr2[max], col = "red", cex = 2, pch = 20)
 # Plot Cp, highlight min value
-plot(sumBS$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
-min = which.min(sumBS$cp)
-points(min,sumBS$cp[min], col = "red", cex = 2, pch = 20)
+plot(sumB$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+min = which.min(sumB$cp)
+points(min,sumB$cp[min], col = "red", cex = 2, pch = 20)
 # Plot BIC, highlight min value
-plot(sumBS$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
-min = which.min(sumBS$bic)
-points(min, sumBS$bic[min], col = "red", cex = 2, pch = 20)
+plot(sumB$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+min = which.min(sumB$bic)
+points(min, sumB$bic[min], col = "red", cex = 2, pch = 20)
 ```
 
 ```{r}
-sumBS
+par(mfrow=c(2,2))
+plot(sumF$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
+# Plot Adjusted R^2, highlight max value
+plot(sumF$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+max = which.max(sumF$adjr2)
+points(max, sumF$adjr2[max], col = "red", cex = 2, pch = 20)
+# Plot Cp, highlight min value
+plot(sumF$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+min = which.min(sumF$cp)
+points(min,sumF$cp[min], col = "red", cex = 2, pch = 20)
+# Plot BIC, highlight min value
+plot(sumF$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+min = which.min(sumF$bic)
+points(min, sumF$bic[min], col = "red", cex = 2, pch = 20)
 ```
 
 
 ```{r}
 bs_mod <- lm(growth_2_6 ~ cnn_17 + cnn_89 + punc_num_..28 + 
-               Num_Subscribers_Base1 + avg_growth3, data = train)
+               Num_Subscribers_Base + avg_growth, data = train)
 ```
 
 
 ```{r}
-predict(bs_mod, newdata = validation)
+p <- predict(bs_mod, newdata = validation)
+mse <- mean((validation$growth_2_6 - p)^2)
+rmse <- sqrt(mse)
+rmse
 ```
 
 
