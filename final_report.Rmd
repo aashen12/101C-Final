@@ -20,7 +20,7 @@ We manipulated the `PublishedDate` variable by converting it from a date and tim
 
 ## Predictor Selection
 
-In order to refine our subset of 
+In order to refine our subset of predictors, we use the LASSO to select significant predictors
 
 
 ## Code Appendix
