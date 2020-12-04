@@ -20,7 +20,7 @@ We manipulated the `PublishedDate` variable by converting it from a date and tim
 
 ## Predictor Selection
 
-In order to refine our subset of predictors, we use the LASSO to select significant predictors
+In order to refine our subset of predictors, we use the LASSO to select significant predictors. We first fit a LASSO model for a sequence of candidate $\lambda$ values. From there, we select our optimal value of $\lambda$ as the one that is one standard deviation above the $\lambda$ value that resulted in the lowest test MSE. From these parameters, we extract the predicted coefficients in this LASSO model as our predictors for our candidate model.
 
 
 ## Code Appendix

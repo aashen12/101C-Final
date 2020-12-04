@@ -1,0 +1,250 @@
+---
+title: "Model 10"
+author: "Andy Shen"
+date: "12/3/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA)
+```
+
+```{r}
+training <- read.csv("training.csv", stringsAsFactors = FALSE)
+dim(training)
+any(is.na(training))
+var_types <- vapply(training, class, character(1))
+names(training)[-which(var_types %in% c("integer", "numeric"))]
+```
+
+```{r}
+dates <- training$PublishedDate
+head(dates)
+split_dates <- strsplit(dates, "[:/ ]")
+head(split_dates)
+split_dates <- lapply(split_dates, as.numeric)
+years <- function(date) {
+  date[3]
+}
+yrs <- lapply(split_dates, years)
+unique(yrs)  # Only 2020
+new_time <- function(old_date) {
+  old_date <- as.numeric(old_date)
+  month <- old_date[1]
+  day <- old_date[2]
+  hr <- old_date[4]
+  minute <- old_date[5]
+  month_days <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+  complete_months <- month - 1
+  if (complete_months > 0) {
+    complete_month_days <- sum(month_days[1:complete_months])
+  } else {
+    complete_month_days <- 0
+  }
+  total_days <- complete_month_days + day
+  pre_hrs <- total_days * 24
+  total_hrs <- pre_hrs + hr
+  pre_min <- total_hrs * 60
+  final_time <- pre_min + minute 
+  final_time
+}
+processed_dates <- vapply(split_dates, new_time, numeric(1))
+training$PublishedDate <- processed_dates
+```
+
+```{r}
+subs <- training[, 248:250]
+sub_final <- 3 - 3 * subs[[1]] - 2 * subs[[2]] - subs[[3]]
+views <- training[, 251:253]
+views_final <- 3 - 3 * views[[1]] - 2 * views[[2]] - views[[3]]
+growth <- training[, 254:256]
+growth_final <- 3 - 3 * growth[[1]] - 2 * growth[[2]] - growth[[3]]
+vids <- training[, 257:259]
+vid_final <- 3 - 3 * vids[[1]] - 2 * vids[[2]] - vids[[3]]
+growth_2_6 <- training$growth_2_6
+names(training)[c(1, 248:260)]
+training <- training[, -c(1, 248:260)]
+training <- data.frame(training, Num_Subscribers_Base = sub_final,
+                       Num_Views_Base = views_final, avg_growth = growth_final,
+                       count_vids = vid_final, growth_2_6 = growth_2_6)
+```
+
+```{r}
+# See which variables have no variation (useless)
+var_sds <- vapply(training, sd, numeric(1))
+useless_vars <- names(training)[var_sds == 0]
+useless_vars
+training <- training[, !(names(training) %in% useless_vars)]
+```
+```{r}
+# Remove highly correlated variables
+cor_mtx <- round(cor(training[, -ncol(training)]), 2)
+library(reshape2)
+library(ggplot2)
+melted_cor_mtx <- melt(cor_mtx)
+cor_vars <- which(abs(cor_mtx) > 0.9, arr.ind = TRUE)
+for (i in 1:nrow(cor_vars)) {
+  if (cor_vars[i, 1] >= cor_vars[i, 2]) {
+    cor_vars[i, ] <- rep(NA, 2)
+  }
+}
+
+all_na <- function(data) {
+  all(is.na(data))
+}
+unique_cor_vars <- apply(cor_vars, 1, all_na)
+cor_vars <- cor_vars[!unique_cor_vars, ]
+corr_vars <- unique(rownames(cor_vars))
+```
+
+```{r}
+factor_vars <- training[, 235:238]
+factor_vars <- data.frame(lapply(factor_vars, factor))
+training[, 235:238] <- factor_vars
+training <- training[, !(names(training) %in% corr_vars)]
+```
+
+
+```{r}
+val_mses <- numeric(10)
+set.seed(5341)
+library(glmnet)
+for (i in seq_len(10)) {
+  data_split <- sample(nrow(training), nrow(training) * 0.8)
+  train <- training[data_split, ]
+  validation <- training[-data_split, ]
+  train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
+  train_y <- train$growth_2_6
+  test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
+  lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
+  salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
+                         alpha = 1, lambda = lambda_grid, standardize = TRUE)
+  salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
+                               lambda = lambda_grid, standardize = TRUE,
+                               nfolds = 10)
+  lambda_1se <- salary_lasso_cv$lambda.1se
+  lasso_test_preds <- predict(salary_lasso, newx = test_x, s = lambda_1se)
+  val_mses[i] <- mean((lasso_test_preds - validation$growth_2_6)^2)
+}
+mean(val_mses)
+hist(val_mses)
+data_split <- sample(nrow(training), nrow(training) * 0.8)
+train <- training[data_split, ]
+validation <- training[-data_split, ]
+train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
+train_y <- train$growth_2_6
+test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
+lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
+salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
+                         alpha = 1, lambda = lambda_grid, standardize = TRUE)
+salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
+                               lambda = lambda_grid, standardize = TRUE,
+                               nfolds = 10)
+lambda_1se <- salary_lasso_cv$lambda.1se
+lasso_coefs <- predict(salary_lasso, newx = test_x,
+                       s = lambda_1se, type = "coefficients")[, 1]
+keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
+```
+```{r}
+keep_vars <- c(keep_vars[1:47], names(training)[(ncol(training) - 4):(ncol(training) - 1)])
+```
+
+```{r}
+library(randomForest)
+set.seed(1265)
+data_split <- sample(nrow(training), nrow(training) * 0.8)
+train <- training[data_split, ]
+validation <- training[-data_split, ]
+train_bag <- train[, c(keep_vars, "growth_2_6")]
+# -1 from ncol() because one column is the response variable
+p <- ncol(train_bag) - 1 # Total number of predictors = 59
+m_vals <- floor(seq(from = 1, to = p, length.out = 25))
+```
+
+
+# Best Subsets
+
+```{r}
+library(leaps)
+best_sub <- regsubsets(growth_2_6 ~ ., data = train, method = "exhaustive",
+                       really.big = TRUE, intercept = TRUE)
+
+forward_sel <- regsubsets(growth_2_6 ~ ., data = train, method = "forward",
+                       really.big = FALSE)
+sumF <- summary(forward_sel)
+
+backward_sel <- regsubsets(growth_2_6 ~ ., data = train, method = "backward",
+                       really.big = FALSE)
+sumB <- summary(backward_sel)
+```
+
+
+```{r}
+sumBS <- summary(best_sub)
+plot(sumBS$rsq, xlab = "Number of predictors", ylab = "RSq",
+     type = "l", col = "blue", main = 'Best Subset Selection')
+lines(sumF$rsq, col = "red")
+lines(sumB$rsq, col = "green")
+
+plot(sumBS$rss, xlab = "Number of predictors", ylab = "RSS",
+     type = "l", col = "blue")
+lines(sumF$rss, col = "red")
+lines(sumB$rss, col = "green")
+
+
+# Demo 2. We illustrate how to select the number of predictors using
+#         information criteria.
+# install.packages("leaps")
+
+
+# Plot RSS
+par(mfrow=c(2,2))
+plot(sumBS$rss, xlab = "Number of Variables", ylab = "RSS", type = "l")
+# Plot Adjusted R^2, highlight max value
+plot(sumBS$adjr2, xlab = "Number of Variables", ylab = "Adjusted RSq", type = "l")
+max = which.max(sumBS$adjr2)
+points(max, sumBS$adjr2[max], col = "red", cex = 2, pch = 20)
+# Plot Cp, highlight min value
+plot(sumBS$cp, xlab = "Number of Variables", ylab = "Cp", type = "l")
+min = which.min(sumBS$cp)
+points(min,sumBS$cp[min], col = "red", cex = 2, pch = 20)
+# Plot BIC, highlight min value
+plot(sumBS$bic, xlab = "Number of Variables", ylab = "BIC", type = "l")
+min = which.min(sumBS$bic)
+points(min, sumBS$bic[min], col = "red", cex = 2, pch = 20)
+```
+
+```{r}
+sumBS
+```
+
+
+```{r}
+bs_mod <- lm(growth_2_6 ~ cnn_17 + cnn_89 + punc_num_..28 + 
+               Num_Subscribers_Base1 + avg_growth3, data = train)
+```
+
+
+```{r}
+predict(bs_mod, newdata = validation)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
