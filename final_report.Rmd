@@ -16,7 +16,7 @@ The purpose of this regression analysis was to predict the growth percentage of 
 
 We cleaned the data by plotting each predictor variable against `grow_2_6` and examined each univariate plot for possible associations between predictor variables and the growth percentage. We noticed that there existed many outliers or stray points that did not belong in the plot. However, instead of removing these outliers, we left in the model, believing that there may be an underlying relationship explained by the outliers. 
 
-We manipulated the `PublishedDate` variable by converting it from a date and time into the total number of minutes elapsed from 1 January, 2020. I DON'T KNOW IF THIS IS CORRECT We also re-scale the number of subscribers, views, growth, and video count by...I DON'T UNDERSTAND THE METHOD YOU USE TO RESCALE THEDSE AS THERE ARE NO COMMENTS IN THE CODE.
+We manipulated the `PublishedDate` variable by converting it from a date and time into the total number of minutes elapsed from 1 January, 2020. I DON'T KNOW IF THIS IS CORRECT We also re-scale the number of subscribers, views, growth, and video count by...I DON'T UNDERSTAND THE METHOD YOU USE TO RESCALE THESE AS THERE ARE NO COMMENTS IN THE CODE.
 
 ## Predictor Selection
 
