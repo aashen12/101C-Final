@@ -96,17 +96,59 @@ cor_vars <- cor_vars[!unique_cor_vars, ]
 corr_vars <- unique(rownames(cor_vars))
 ```
 
+
 ```{r}
-factor_vars <- training[, 235:238]
+library(dplyr)
+training <- training[-which(training$views_2_hours > 2000000), ]
+training <- training[-which(training$hog_0 > 0.5), ]
+training <- training[-which(training$hog_1 > 0.35), ]
+training <- training[-which(training$hog_152 > 0.4), ]
+training <- training[-which(training$hog_182 > 0.4), ]
+training <- training[-which(training$hog_350 > 0.5), ]
+training <- training[-which(training$hog_364 > 0.6), ]
+training <- training[-which(training$hog_512 > 0.5), ]
+
+
+training <- training[which(training$hog_522 <= 0.5), ]
+training <- training[which(training$hog_584 <= 0.5), ]
+training <- training[which(training$hog_643 <= 0.8), ]
+training <- training[which(training$hog_649 <= 0.5), ]
+training <- training[which(training$hog_658 <= 0.5), ]
+training <- training[which(training$hog_705 <= 0.5), ]
+training <- training[which(training$hog_724 <= 0.5), ]
+training <- training[which(training$hog_774 <= 0.5), ]
+training <- training[which(training$hog_818 <= 0.4), ]
+training <- training[which(training$hog_828 <= 0.6), ]
+training <- training[which(training$hog_831 <= 0.5), ]
+training <- training[which(training$hog_832 <= 0.6), ]
+training <- training[which(training$hog_855 <= 0.5), ]
+training <- training[which(training$cnn_0 == 0), ]
+training <- training[which(training$cnn_36 == 0), ]
+training <- training[which(training$cnn_65 == 0), ]
+training <- training[which(training$punc_num_..18 == 0), ]
+training <- training[which(training$punc_num_..21 <= 1.5), ]
+training <- training[which(training$punc_num_..26 == 0), ]
+training <- training[which(training$punc_num_..27 == 0), ]
+```
+
+```{r}
+new_var_sd <- vapply(training, sd, numeric(1))
+useless_vars <- names(training)[new_var_sd == 0]
+useless_vars
+training <- training[, !(names(training) %in% useless_vars)]
+```
+
+```{r}
+factor_vars <- training[, 229:232]
 factor_vars <- data.frame(lapply(factor_vars, factor))
-training[, 235:238] <- factor_vars
+training[, 229:232] <- factor_vars
 training <- training[, !(names(training) %in% corr_vars)]
 ```
 
 
 ```{r}
 val_mses <- numeric(10)
-set.seed(5341)
+set.seed(1234)
 library(glmnet)
 for (i in seq_len(10)) {
   data_split <- sample(nrow(training), nrow(training) * 0.8)
@@ -121,7 +163,7 @@ for (i in seq_len(10)) {
   salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
                                lambda = lambda_grid, standardize = TRUE,
                                nfolds = 10)
-  lambda_1se <- salary_lasso_cv$lambda.1se
+  lambda_1se <- salary_lasso_cv$lambda.min
   lasso_test_preds <- predict(salary_lasso, newx = test_x, s = lambda_1se)
   val_mses[i] <- mean((lasso_test_preds - validation$growth_2_6)^2)
 }
@@ -139,25 +181,13 @@ salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
 salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
                                lambda = lambda_grid, standardize = TRUE,
                                nfolds = 10)
-lambda_1se <- salary_lasso_cv$lambda.1se
+lambda_1se <- salary_lasso_cv$lambda.min
 lasso_coefs <- predict(salary_lasso, newx = test_x,
                        s = lambda_1se, type = "coefficients")[, 1]
 keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
 ```
 ```{r}
-keep_vars <- c(keep_vars[1:47], names(training)[(ncol(training) - 4):(ncol(training) - 1)])
-```
-
-```{r}
-library(randomForest)
-set.seed(1265)
-data_split <- sample(nrow(training), nrow(training) * 0.8)
-train <- training[data_split, ]
-validation <- training[-data_split, ]
-train_bag <- train[, c(keep_vars, "growth_2_6")]
-# -1 from ncol() because one column is the response variable
-p <- ncol(train_bag) - 1 # Total number of predictors = 59
-m_vals <- floor(seq(from = 1, to = p, length.out = 25))
+keep_vars <- c(keep_vars[1:118], names(training)[162:165])
 ```
 
 ## Boosting
