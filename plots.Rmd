@@ -50,36 +50,6 @@ new_time <- function(old_date) {
 processed_dates <- vapply(split_dates, new_time, numeric(1))
 training$PublishedDate <- processed_dates
 ```
-```{r}
-cor_mtx <- round(cor(training[, -ncol(training)]), 2)
-library(reshape2)
-library(ggplot2)
-melted_cor_mtx <- melt(cor_mtx)
-cor_vars <- which(abs(cor_mtx) > 0.5, arr.ind = TRUE)
-for (i in 1:nrow(cor_vars)) {
-  if (cor_vars[i, 1] >= cor_vars[i, 2]) {
-    cor_vars[i, ] <- rep(NA, 2)
-  }
-}
-
-all_na <- function(data) {
-  all(is.na(data))
-}
-unique_cor_vars <- apply(cor_vars, 1, all_na)
-cor_vars <- cor_vars[!unique_cor_vars, ]
-corr_vars <- unique(rownames(cor_vars))
-```
-
-```{r}
-outlier <- function(data) {
-  low <- mean(data) - 1.5 * IQR(data)
-  high <- mean(data) + 1.5 * IQR(data)
-  which(data < low | data > high)
-}
-outliers <- table(unlist(lapply(training[,-ncol(training)], outlier)))
-outlier_index <- sort(outliers, decreasing = TRUE)
-training <- training[-as.numeric(names(outlier_index)[1:50]), ]
-```
 
 ```{r}
 subs <- training[, 248:250]
@@ -97,18 +67,86 @@ training <- data.frame(training, Num_Subscribers_Base = sub_final,
                        Num_Views_Base = views_final, avg_growth = growth_final,
                        count_vids = vid_final, growth_2_6 = growth_2_6)
 ```
+```{r}
+# See which variables have no variation (useless)
+var_sds <- vapply(training, sd, numeric(1))
+useless_vars <- names(training)[var_sds == 0]
+useless_vars
+training <- training[, !(names(training) %in% useless_vars)]
+```
+```{r}
+# Remove highly correlated variables
+cor_mtx <- round(cor(training[, -ncol(training)]), 2)
+library(reshape2)
+library(ggplot2)
+melted_cor_mtx <- melt(cor_mtx)
+cor_vars <- which(abs(cor_mtx) > 0.9, arr.ind = TRUE)
+for (i in 1:nrow(cor_vars)) {
+  if (cor_vars[i, 1] >= cor_vars[i, 2]) {
+    cor_vars[i, ] <- rep(NA, 2)
+  }
+}
+
+all_na <- function(data) {
+  all(is.na(data))
+}
+unique_cor_vars <- apply(cor_vars, 1, all_na)
+cor_vars <- cor_vars[!unique_cor_vars, ]
+corr_vars <- unique(rownames(cor_vars))
+```
 
 
 ```{r}
-factor_vars <- training[, 247:250]
+library(dplyr)
+training <- training[-which(training$views_2_hours > 2000000), ]
+training <- training[-which(training$hog_0 > 0.5), ]
+training <- training[-which(training$hog_1 > 0.35), ]
+training <- training[-which(training$hog_152 > 0.4), ]
+training <- training[-which(training$hog_182 > 0.4), ]
+training <- training[-which(training$hog_350 > 0.5), ]
+training <- training[-which(training$hog_364 > 0.6), ]
+training <- training[-which(training$hog_512 > 0.5), ]
+
+
+training <- training[which(training$hog_522 <= 0.5), ]
+training <- training[which(training$hog_584 <= 0.5), ]
+training <- training[which(training$hog_643 <= 0.8), ]
+training <- training[which(training$hog_649 <= 0.5), ]
+training <- training[which(training$hog_658 <= 0.5), ]
+training <- training[which(training$hog_705 <= 0.5), ]
+training <- training[which(training$hog_724 <= 0.5), ]
+training <- training[which(training$hog_774 <= 0.5), ]
+training <- training[which(training$hog_818 <= 0.4), ]
+training <- training[which(training$hog_828 <= 0.6), ]
+training <- training[which(training$hog_831 <= 0.5), ]
+training <- training[which(training$hog_832 <= 0.6), ]
+training <- training[which(training$hog_855 <= 0.5), ]
+training <- training[which(training$cnn_0 == 0), ]
+training <- training[which(training$cnn_36 == 0), ]
+training <- training[which(training$cnn_65 == 0), ]
+training <- training[which(training$punc_num_..18 == 0), ]
+training <- training[which(training$punc_num_..21 <= 1.5), ]
+training <- training[which(training$punc_num_..26 == 0), ]
+training <- training[which(training$punc_num_..27 == 0), ]
+```
+
+```{r}
+new_var_sd <- vapply(training, sd, numeric(1))
+useless_vars <- names(training)[new_var_sd == 0]
+useless_vars
+training <- training[, !(names(training) %in% useless_vars)]
+```
+
+```{r}
+factor_vars <- training[, 229:232]
 factor_vars <- data.frame(lapply(factor_vars, factor))
-training[, 247:250] <- factor_vars
+training[, 229:232] <- factor_vars
+training <- training[, !(names(training) %in% corr_vars)]
 ```
 
 ```{r, fig.height=4, fig.width=4}
 library(dplyr)
-no_hog <- training %>% select(-contains("hog"))
-plot(growth_2_6 ~ ., data = no_hog,
+plot(growth_2_6 ~ ., data = training,
      cex = 0.5, pch = 19, col = rgb(0, 0, 0, 0.1))
 ```
 
