@@ -246,6 +246,20 @@ test_csv <- data.frame(id = id, growth_2_6 = bag_test_preds)
 write.csv(test_csv, "andy_boost_1.csv", row.names = FALSE)
 ```
 
+
+```{r}
+old_csv <- read.csv("model10bpredictions.csv")
+sqrt(mean((test_csv$growth_2_6 - old_csv$growth_2_6)^2))
+```
+
+
+```{r}
+n <- 34
+head(old_csv, n)
+head(test_csv, n)
+```
+
+
 ## Ethan
 
 ```{r}
