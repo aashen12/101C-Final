@@ -186,6 +186,8 @@ lasso_coefs <- predict(salary_lasso, newx = test_x,
                        s = lambda_1se, type = "coefficients")[, 1]
 keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
 ```
+
+
 ```{r}
 keep_vars <- c(keep_vars[1:118], names(training)[162:165])
 ```
@@ -226,7 +228,7 @@ best_lam
 
 
 ```{r}
-set.seed(123)
+set.seed(126)
 data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
@@ -236,10 +238,7 @@ boost_preds <- predict(boosted, newdata = validation)
 boost_mse <- mean((validation$growth_2_6 - boost_preds)^2)
 rmse <- sqrt(boost_mse)
 rmse
-# seed 234 - 1.48
-# seed 123 - 1.46
-# seed 123456 - 1.4788
-# most other seeds: 1.51-1.53
+# seed 123 - 1.400
 ```
 
 
@@ -273,18 +272,18 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 247:250] <- factor_vars
 bag_test_preds <- predict(boosted, newdata = test)
 test_csv <- data.frame(id = id, growth_2_6 = bag_test_preds)
-write.csv(test_csv, "andy_boost_1.csv", row.names = FALSE)
+write.csv(test_csv, "andy_boost_2.csv", row.names = FALSE)
 ```
 
 
 ```{r}
-old_csv <- read.csv("model10bpredictions.csv")
+old_csv <- read.csv("model12predictions.csv")
 sqrt(mean((test_csv$growth_2_6 - old_csv$growth_2_6)^2))
 ```
 
 
 ```{r}
-n <- 34
+n <- 34 
 head(old_csv, n)
 head(test_csv, n)
 ```
