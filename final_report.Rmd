@@ -25,4 +25,5 @@ In order to refine our subset of predictors, we use the LASSO to select signific
 
 We choose LASSO, shrink things 0, keeps the most important ones. Only care about nonzero coef predictors as they were deemed important by LASSO. Could mention even though it doesn't translate to bagging, it was a technique to refine the large number of predictors
 
+
 ## Code Appendix
