@@ -1,6 +1,6 @@
 ---
-title: "The Keys to YouTubing"
-subtitle: "The Gould-en Rule"
+title: "Final Presentation - The Gould-en Rule"
+subtitle: "Stats 101C Lecture 3"
 author: "Andy Shen, Ethan Allavarpu"
 date: "Fall 2020"
 header-includes:

@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The purpose of this regression analysis was to predict the growth percentage of a newly uploaded YouTube video during the 2nd through 6th hour of its publication (`grow_2_6`). In this analysis, we employ a variety of regression techniques to a variety of attributes that make up a YouTube video. 
 
-We cleaned the data by plotting each predictor variable against `grow_2_6` and examined each univariate plot for possible associations between predictor variables and the growth percentage. We noticed that there existed many outliers or stray points that did not belong in the plot. We systematically removed these points, basing it off personal judgement as to whether the stray points would not assist in prediction. However, we do remove highly correlated variables as indicated by a correlation matrix heat map. All predictor pairs with a correlation coefficient over 0.9 are removed.
+We cleaned the data by plotting each predictor variable against `grow_2_6` and examined each univariate plot for possible associations between predictor variables and the growth percentage. We noticed that there existed many outliers or stray points that did not belong in the plot. We systematically removed these points, basing it off personal judgment as to whether the stray points would not assist in prediction. However, we do remove highly correlated variables as indicated by a correlation matrix heat map. All predictor pairs with a correlation coefficient over 0.9 are removed.
 
 We also remove "zeroes" from the data set - ETHAN WRITE ABOUT THIS MORE AS I DONT REALLY KNOW HOW TO EXPLAIN THIS IF IT'S EVEN NECESSARY.
 
