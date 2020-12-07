@@ -8,7 +8,7 @@ header-includes:
    - \usepackage{bm}
 output:
   beamer_presentation:
-    theme: "Warsaw"
+    theme: "Boadilla"
     colortheme: "seahorse"
     slide_level: 2
 classoption: "aspectratio=169"
@@ -18,27 +18,53 @@ classoption: "aspectratio=169"
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## R Markdown
+# Introduction
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Introduction
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+- With the rise in popularity of YouTube, many people are now making a living off creating YouTube videos.
 
-## Slide with Bullets
+- The more views gained by the video, the more likely it is for that channel to profit.
 
-- Bullet 1
-- Bullet 2
-- Bullet 3
+- We are interested in predicting the growth rate in video views between the **second** and **sixth** hour that a YouTube video is published.
 
-## Slide with R Output
+# Pre-Processing
 
-```{r cars, echo = TRUE}
-summary(cars)
-```
+## Outliers
 
-## Slide with Plot
+- Examined a univariate plot to look for stray points and removed them systematically.
 
-```{r pressure}
-plot(pressure)
-```
+  - Based off personal judgment and inference on the effect of the stray points.
+ 
+- We also remove highly correlated variables as indicated by a heat map.
+
+  - To avoid overfitting based on having too many predictors.
+  
+## Predictor Selection
+
+- We use LASSO to select significant predictors.
+  
+  - Used to refine predictors from a large subset.
+  
+  - LASSO pushes non-significant predictors to zero and keeps the most significant ones.
+  
+- First fit a LASSO model for a sequence of candidate $\lambda$ values. 
+ 
+- Then select our optimal value of $\lambda$ as the one that is one standard deviation above the $\lambda$ value that resulted in the lowest test MSE.
+
+- Then extract the predicted coefficients in this LASSO model as our predictors for the candidate model.
+
+
+# Candidate Models
+
+## Random Forest
+
+## Bagging
+
+
+
+
+
+
+ 
 
