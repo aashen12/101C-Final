@@ -131,11 +131,39 @@ training <- training[which(training$punc_num_..26 == 0), ]
 training <- training[which(training$punc_num_..27 == 0), ]
 ```
 
+
+
+
+
+
 ```{r}
 new_var_sd <- vapply(training, sd, numeric(1))
 useless_vars <- names(training)[new_var_sd == 0]
 useless_vars
 training <- training[, !(names(training) %in% useless_vars)]
+```
+
+
+```{r}
+n_zeroes <- rep(NA, nrow(training))
+for(i in seq_len(nrow(training))){
+  row_i_zeroes <- 0
+  for(j in seq_len(ncol(training))){
+    if(round(training[i,j], digits = 5) == 0){
+      row_i_zeroes <- row_i_zeroes + 1
+    }
+  }
+  if(i %% 1000 == 0) cat("Reached iteration ", i, "\n")
+  n_zeroes[i] <- row_i_zeroes
+}
+head(n_zeroes, 20)
+names(n_zeroes) <- 1:nrow(training)
+n_zeroes <- sort(n_zeroes, decreasing = TRUE)
+```
+
+```{r}
+head(n_zeroes, 100)
+training <- training[n_zeroes <= ncol(training) / 3, ]
 ```
 
 ```{r}
@@ -186,8 +214,9 @@ lasso_coefs <- predict(salary_lasso, newx = test_x,
                        s = lambda_1se, type = "coefficients")[, 1]
 keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
 ```
+
 ```{r}
-keep_vars <- c(keep_vars[1:118], names(training)[162:165])
+keep_vars <- c(keep_vars[1:121], names(training)[162:165])
 ```
 
 ```{r}
@@ -239,10 +268,9 @@ m_vals <- floor(seq(from = 1, to = p, length.out = 20))
 # }
 ```
 
-
 ```{r}
-set.seed(12345)
-data_split <- sample(nrow(training), nrow(training) * 0.7)
+set.seed(1234999)
+data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
 bag_tree <- randomForest(growth_2_6 ~ ., data = train,
@@ -253,6 +281,11 @@ rmse <- sqrt(bag_mse)
 rmse
 ```
 
+```{r}
+# seed 129 - 1.56
+# seed 12345 - 1.50
+# 1234999 - 1.431808
+```
 
 
 ```{r}
@@ -285,8 +318,10 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 247:250] <- factor_vars
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv <- data.frame(id = id, growth_2_6 = bag_test_preds)
-write.csv(test_csv, "model13bpredictions_ANDY.csv", row.names = FALSE)
+write.csv(test_csv, "model13bpredictions_ZEROS.csv", row.names = FALSE)
 ```
+
+
 
 ```{r}
 old_csv <- read.csv("model13bpredictions.csv")
