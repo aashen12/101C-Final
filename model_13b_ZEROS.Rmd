@@ -1,6 +1,6 @@
 ---
-title: "Model 10"
-author: "Andy Shen"
+title: "Model 13b"
+author: 'Ethan Allavarpu (UID: 405287603)'
 date: "12/3/2020"
 output: pdf_document
 ---
@@ -131,11 +131,39 @@ training <- training[which(training$punc_num_..26 == 0), ]
 training <- training[which(training$punc_num_..27 == 0), ]
 ```
 
+
+
+
+
+
 ```{r}
 new_var_sd <- vapply(training, sd, numeric(1))
 useless_vars <- names(training)[new_var_sd == 0]
 useless_vars
 training <- training[, !(names(training) %in% useless_vars)]
+```
+
+
+```{r}
+n_zeroes <- rep(NA, nrow(training))
+for(i in seq_len(nrow(training))){
+  row_i_zeroes <- 0
+  for(j in seq_len(ncol(training))){
+    if(round(training[i,j], digits = 5) == 0){
+      row_i_zeroes <- row_i_zeroes + 1
+    }
+  }
+  if(i %% 1000 == 0) cat("Reached iteration ", i, "\n")
+  n_zeroes[i] <- row_i_zeroes
+}
+head(n_zeroes, 20)
+names(n_zeroes) <- 1:nrow(training)
+n_zeroes <- sort(n_zeroes, decreasing = TRUE)
+```
+
+```{r}
+head(n_zeroes, 100)
+training <- training[n_zeroes <= ncol(training) / 3, ]
 ```
 
 ```{r}
@@ -187,58 +215,76 @@ lasso_coefs <- predict(salary_lasso, newx = test_x,
 keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
 ```
 
-
 ```{r}
-keep_vars <- c(keep_vars[1:118], names(training)[162:165])
+keep_vars <- c(keep_vars[1:121], names(training)[162:165])
 ```
 
-## Boosting
-
 ```{r}
-library(gbm)
-set.seed(1265)
-lambdas <- 10^seq(from = -10, to = 0, length.out = 100)
-rmses <- rep(NA, length(lambdas))
+library(randomForest)
+set.seed(100)
 data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, ]
 validation <- training[-data_split, ]
 train_bag <- train[, c(keep_vars, "growth_2_6")]
 # -1 from ncol() because one column is the response variable
 p <- ncol(train_bag) - 1 # Total number of predictors = 59
-for(i in seq_along(rmses)) {
-  boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
-                 n.trees = 1000, shrinkage = lambdas[i], verbose = FALSE)
-  boost_preds <- predict(boosted, newdata = validation)
-  boost_mse <- mean((validation$growth_2_6 - boost_preds)^2)
-  rmses[i] <- sqrt(boost_mse)
-}
+m_vals <- floor(seq(from = 1, to = p, length.out = 20))
+```
+
+```{r}
+# create_best_m <- function(m_val, train_data = training, split = 0.8, folds = 5,
+#                           num_tree = 25, keep_vars = names(train_data),
+#                           seed = 1) {
+#   set.seed(seed)
+#   data_split <- sample(nrow(train_data), nrow(train_data))
+#   rmses <- numeric(folds)
+#   for (i in seq_len(folds)) {
+#     d_split <- data_split[((nrow(train_data) / folds)*(i - 1) + 1):((nrow(train_data) / folds) * i)]
+#     train <- train_data[-d_split, keep_vars]
+#     validation <- train_data[d_split, ]
+#     bag_tree <- randomForest(growth_2_6 ~ ., data = train,
+#                               mtry = m_val, ntree = num_tree)
+#     bag_preds <- predict(bag_tree, newdata = validation)
+#     bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
+#     rmses[i] <- sqrt(bag_mse)
+#   }
+#   rmses
+# }
+# rmses <- list()
+# length(rmses) <- 5
+# set.seed(1235)
+#   rmses <- vapply(m_vals, create_best_m, numeric(5),
+#                        train_data = training,
+#                        keep_vars = c(keep_vars, "growth_2_6"),
+#                        num_tree = 50, seed = 1421352)
 
 ```
 
 
 ```{r}
-plot(lambdas, rmses, type = "l")
+# plot(m_vals, rmses[1, ], type = "l")
+# for (i in 2:5) {
+#   lines(m_vals, rmses[i, ], col = i)
+# }
 ```
 
-
 ```{r}
-best_lam <- lambdas[which.min(rmses)]
-best_lam
-```
-
-
-```{r}
-set.seed(126)
+set.seed(1234999)
 data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
-boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
-                 n.trees = 1000, shrinkage = lambdas[i], verbose = FALSE)
-boost_preds <- predict(boosted, newdata = validation)
-boost_mse <- mean((validation$growth_2_6 - boost_preds)^2)
-rmse <- sqrt(boost_mse)
+bag_tree <- randomForest(growth_2_6 ~ ., data = train,
+                            mtry = p, ntree = 500)
+bag_preds <- predict(bag_tree, newdata = validation)
+bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
+rmse <- sqrt(bag_mse)
 rmse
-# seed 123 - 1.400
+```
+
+```{r}
+# seed 129 - 1.56
+# seed 12345 - 1.50
+# 1234999 - 1.431808
 ```
 
 
@@ -270,48 +316,17 @@ test <- data.frame(test, Num_Subscribers_Base = sub_final,
 factor_vars <- test[, 247:250]
 factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 247:250] <- factor_vars
-bag_test_preds <- predict(boosted, newdata = test)
+bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv <- data.frame(id = id, growth_2_6 = bag_test_preds)
-write.csv(test_csv, "andy_boost_2.csv", row.names = FALSE)
+write.csv(test_csv, "model13bpredictions_ZEROS.csv", row.names = FALSE)
 ```
 
 
+
 ```{r}
-old_csv <- read.csv("model12predictions.csv")
+old_csv <- read.csv("model13bpredictions.csv")
 sqrt(mean((test_csv$growth_2_6 - old_csv$growth_2_6)^2))
 ```
-
-
-```{r}
-n <- 34 
-head(old_csv, n)
-head(test_csv, n)
-```
-
-
-## Ethan
-
-```{r}
-# library(gbm)
-# set.seed(101)
-# lambdas <- 10^seq(from = -10, to = 0, length.out = 25)
-# salary_boosted <- list()
-# length(salary_boosted) <- length(lambdas)
-# boost_train_mses <- numeric(length(lambdas))
-# for (i in seq_along(lambdas)) {
-#   salary_boosted[[i]] <- gbm(growth_2_6 ~ ., data = train_bag,
-#                              distribution = "gaussian", n.trees = 500,
-#                              shrinkage = lambdas[i])
-#   boost_train_preds <- predict(salary_boosted[[i]], newdata = validation,
-#                                n.trees = 500)
-#   boost_train_mses[i] <- mean((validation$growth_2_6 - boost_train_preds)^2)
-# }
-# plot(x = lambdas, y = boost_train_mses,
-#      main = expression(paste("Training MSE vs. ", lambda)),
-#      xlab = expression(lambda), ylab = "Training MSE",
-#      pch = 19, cex = 0.5, col = rgb(0.5, 0, 0, alpha = 0.5), las = 1)
-```
-
 
 
 
