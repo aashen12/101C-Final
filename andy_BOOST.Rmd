@@ -204,8 +204,8 @@ train <- training[data_split, ]
 validation <- training[-data_split, ]
 train_bag <- train[, c(keep_vars, "growth_2_6")]
 # -1 from ncol() because one column is the response variable
-p <- ncol(train_bag) - 1 # Total number of predictors = 59
-for(i in seq_along(rmses)) {
+p <- ncol(train_bag) - 1 
+for (i in seq_along(rmses)) {
   boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
                  n.trees = 1000, shrinkage = lambdas[i], verbose = FALSE)
   boost_preds <- predict(boosted, newdata = validation)
@@ -233,7 +233,7 @@ data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
 boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
-                 n.trees = 1000, shrinkage = lambdas[i], verbose = FALSE)
+                 n.trees = 1000, shrinkage = best_lam, verbose = FALSE)
 boost_preds <- predict(boosted, newdata = validation)
 boost_mse <- mean((validation$growth_2_6 - boost_preds)^2)
 rmse <- sqrt(boost_mse)

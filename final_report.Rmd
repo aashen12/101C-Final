@@ -7,7 +7,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, fig.width = 7, fig.height = 4, fig.align = "center")
 library(knitr)
 training <- read.csv("training.csv")
 ```
@@ -26,7 +26,7 @@ We cleaned the data by plotting each predictor variable against `growth_2_6` and
 
 We also transformed multiple variables and added another variable prior to performing predictor selection, as we saw these as potentially useful for data on YouTube growth. The first adjustment we performed was on the `PublishedDate` variable. To this variable, we performed a transformation and added another variable. Initially, the data set had `PublishedDate` as a character variable; we wrote a function to transform this variable into a numeric variable in terms of minutes (since January $1^{st}$, 2020 00:00). This would allow us to see if there was any relationship between the date and `growth_2_6` because we made the variable continuous to match the general perception of time. Not only did we do this with respect to general time since January $1^{st}$, 2020 00:00, but we also *added* a variable (`TimeDay`) that has the time of day (in minutes from 00:00) during which a video was uploaded to YouTube. This could be useful because people may be more likely to watch YouTube videos in the evening (after school or work), so posting nearer to those times allows for greater growth between the second and sixth hours of a video's upload.
 
-The second transformation we made was regarding the binary variables near the end of the data set. When looking at the feature descriptions, wee noticed that the `low`, `low_mid`, and `mid_high` versions of the four variables were natural ordinal variables (where `high` corresponds to values of 0 for the other three options). For these variables, we combined them into a single factor variable with four levels (0, 1, 2, 3) which correspond with `low`, `low_mid`, `mid_high`, and `high`. We did this transformation because bagging and random forest can split along multiple levels of a factor at a node (i.e. 0 and 1 to the left, 2 and 3 to the right), but if we left it as three separate binary variables, the bagging and random forest models could only split between one of the four levels and the three others. Thus, by combining these variables into a factor with four levels, we allow the random forest and bagging models greater ability to distinguish between the four levels (`low`, `low_mid`, `mid_high`, `high`) for each of these statistics (`Num_Subscribers`, `Num_Views`, `avg_growth`, `count_views`).
+The second transformation we made was regarding the binary variables near the end of the data set. When looking at the feature descriptions, wee noticed that the `low`, `low_mid`, and `mid_high` versions of the four variables were natural ordinal variables (where `high` corresponds to values of 0 for the other three options). For these variables, we combined them into a single factor variable with four levels (0, 1, 2, 3) which correspond with `low`, `low_mid`, `mid_high`, and `high`. We did this transformation because bagging and random forest can split along multiple levels of a factor at a node (i.e. 0 and 1 to the left, 2 and 3 to the right) as long as all the levels are in a single variable, but if we left it as three separate binary variables, the bagging and random forest models could only split between one of the four levels and the three others since it can only look at a single variable for each node. Thus, by combining these variables into a factor with four levels, we allow the random forest and bagging models greater ability to distinguish between the four levels (`low`, `low_mid`, `mid_high`, `high`) and find nuances (such as 2-2 splits) for each of these statistics (`Num_Subscribers`, `Num_Views`, `avg_growth`, `count_views`).
 
 
 
@@ -40,22 +40,52 @@ We use LASSO to refine our predictors because this technique shrinks coefficient
 
 A vast majority of our models were fit using either bagging or random forest. Our first model used LASSO to select predictors, but we did very little pre-processing and did not remove outliers. This did not result in a very successful model which is why we decided that pre-processing was necessary. We then implemented a mixture of bagging and random forest, adjusting certain parameters at a time, such as the number of trees, their depth, as well as our $\lambda$ values.
 
-The reason we chose bagging and random forest models over methods such as LASSO for final predictions and boosting are because bagging and random forest models produced lower RMSE values. INSERT FIGURE/HIST COMPARING RMSE OF BAGGING, RF, LASSO AVG, and BOOSTING
+The reason we chose bagging and random forest models over methods such as LASSO for final predictions and boosting are because bagging and random forest models produced lower RMSE values (as described in the paragraph below and below plots).
 
 Our best candidate model, `Model 15`, utilized the random forest approach. After selecting the variables that seemed important, we used our smaller data set to determine the best value of $m$. This $m$ corresponds to the number of variables the model randomly considers in each node of each decision tree produced. We utilized 5-fold cross-validation to pick the optimal value of $m$ for our final model used on the test data. We created our own cross-validation function to get a better estimate of the test RMSE and tried several potential values for $m$, ranging from 1 to $p$, to determine which $m$ produced the lowest RMSE. In the case of `Model 15`, we chose the best $m$ based on the minimum *median* RMSE (of the five folds). The reason we chose median and not mean is because with only five folds, a single high or low RMSE could significantly impact the average RMSE for a given $m$, and the median is more resistant to extreme values.
+
+```{r}
+load("rmses_methods.RData")
+load("best_m_cv.RData")
+par(mfrow = c(1, 2))
+names(all_rmses) <- c("LASSO", "Random Forest", "Bagging", "Boosting")
+barplot(all_rmses, ylim = c(0, 2), las = 1,
+        col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
+                rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
+        xlab = "Method", ylab = "RMSE", main = "RMSEs for Various Approches",
+        cex.names = 0.5, las = 1)
+text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4), cex = .5)
+col_scheme <- c(rgb(0.5, 0, 0, 0.5),
+                rgb(0, 0.5, 0, 0.5),
+                rgb(0, 0, 0.5, 0.5),
+                rgb(0, 0.5, 0.5, 0.5),
+                rgb(0.5, 0, 0.5, 0.5))
+m_vals <- floor(seq(from = 1, to = 124, length.out = 20))
+plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses),
+     col = col_scheme[1], main = "Best m for Random Forest",
+     xlab = "m", ylab = "RMSE", las = 1, cex.axis = 0.75)
+for (i in 2:5) {
+  lines(m_vals, rmses[i, ], col = col_scheme[i])
+}
+abline(v = m_vals[which.min(apply(rmses, 2, median))])
+```
 
 Once determining the best $m$, we fit another random forest on 80% of the training data--this time with 500 trees as opposed to 50. We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test data set to submit to Kaggle.
 
 
 ## Results
 
-Our best evaluation metric with our primary model (`Model 15`) on the Kaggle public leaderboard was an RMSE of 1.39594. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285. Model `15b` only differs from `15` in the sense that $m = p$ (i.e., a complete bagging approach) as opposed to $m$ equaling the value which produced the lowest median RMSE (i.e., random forest approach). Here $p$ is the number of predictors.
+Our best evaluation metric with our primary model (`Model 15`) on the Kaggle public leaderboard was an RMSE of 1.39594, which beat all four of the threshold models on the public leaderboard. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285, which also beats all four thresholds on the public leaderboard. `Model 15b` only differs from `Model 15` in the sense that $m = p$ (i.e., a complete bagging approach, $p$ is the number of predictors) as opposed to $m$ equaling the value which produced the lowest median RMSE (i.e., random forest approach).
 
 ## Conclusions
 
-We believe that our model performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we also used this value of $m$ to fit another random forest model with more trees at the end in order to verify the consistency of our model. 
+When comparing the results of our models on the public leaderboard to those on the private leaderboard, we noticed that `Model 15` ended with a private leaderboard score of ____ while `Model 15b` had a private leaderboard score of ____. FINISH AFTER COMPETITTION
 
-One thing we believe could have resulted in improved model performance was having greater background knowledge about YouTube and popularity growth as well as the CNN (convoluted neural network) and HOG characteristics for thumbnails. As we did not have a great deal of specific knowledge about YouTube, we did not necessarily have an intuitive sense of which predictors might perform better or worse; for data transformation in preprocessing we only changed things and added a predictor that we thought *may* have some influence.
+We believe that our primary model (`Model 15`) performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we also used this value of $m$ to fit another random forest model with more trees at the end in order to verify the consistency of our model. 
+
+
+
+One thing we believe could have resulted in improved model performance was having greater background knowledge about YouTube and popularity growth as well as the CNN (convoluted neural network) and HOG characteristics for thumbnails. The above plot, which shows the relative importance of the 10 most influential variables in our random forest approach, emphasizes how the CNN vairables played a distinct role in driving the predictions; removing them would have caused the model to perform much worse with respect to MSE (and thus RMSE). As we did not have a great deal of specific knowledge about YouTube, we did not necessarily have an intuitive sense of which predictors might perform better or worse; for data transformation in preprocessing we only changed things and added a predictor that we thought *may* have some influence.
 
 \pagebreak
 

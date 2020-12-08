@@ -258,7 +258,66 @@ rmse <- sqrt(bag_mse)
 rmse
 ```
 
+```{r}
+set.seed(0)
+data_split <- sample(nrow(training), .8 * nrow(training))
+train <- training[data_split, c(keep_vars, "growth_2_6")]
+validation <- training[-data_split, ]
+bag_tree <- randomForest(growth_2_6 ~ ., data = train,
+                         mtry = p,
+                         ntree = 500)
+bag_preds <- predict(bag_tree, newdata = validation)
+bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
+bag_rmse <- sqrt(bag_mse)
+bag_rmse
+```
 
+
+```{r}
+library(gbm)
+set.seed(1265)
+lambdas <- 10^seq(from = -10, to = 0, length.out = 100)
+boost_rmses <- rep(NA, length(lambdas))
+data_split <- sample(nrow(training), nrow(training) * 0.8)
+train <- training[data_split, ]
+validation <- training[-data_split, ]
+train_bag <- train[, c(keep_vars, "growth_2_6")]
+# -1 from ncol() because one column is the response variable
+p <- ncol(train_bag) - 1 # Total number of predictors = 59
+for(i in seq_along(boost_rmses)) {
+  boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
+                 n.trees = 1000, shrinkage = lambdas[i], verbose = FALSE)
+  boost_preds <- predict(boosted, newdata = validation)
+  boost_mse <- mean((validation$growth_2_6 - boost_preds)^2)
+  boost_rmses[i] <- sqrt(boost_mse)
+}
+best_lam <- lambdas[which.min(boost_rmses)]
+best_lam
+```
+
+
+```{r}
+set.seed(126)
+data_split <- sample(nrow(training), nrow(training) * 0.8)
+train <- training[data_split, c(keep_vars, "growth_2_6")]
+validation <- training[-data_split, ]
+boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
+                 n.trees = 500, shrinkage = best_lam, verbose = FALSE)
+boost_preds <- predict(boosted, newdata = validation)
+boost_mse <- mean((validation$growth_2_6 - boost_preds)^2)
+boost_rmse <- sqrt(boost_mse)
+boost_rmse
+```
+
+```{r}
+all_rmses <- c(sqrt(mean(val_mses)), rmse, bag_rmse, boost_rmse)
+names(all_rmses) <- c("LASSO", "Random Forest", "Bagging", "Boosting")
+barplot(all_rmses, ylim = c(0, 2), las = 1,
+        col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
+                rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
+        xlab = "Method", ylab = "RMSE", main = "RMSEs for Various Approches")
+text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4))
+```
 
 ```{r}
 test <- read.csv("test.csv")
