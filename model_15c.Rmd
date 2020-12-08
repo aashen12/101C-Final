@@ -1,5 +1,5 @@
 ---
-title: "Model 15"
+title: "Model 15c"
 author: 'Ethan Allavarpu (UID: 405287603)'
 date: "12/3/2020"
 output: pdf_document
@@ -245,12 +245,12 @@ for (i in 2:5) {
 }
 ```
 ```{r}
-set.seed(129)
+set.seed(820194)
 data_split <- sample(nrow(training), nrow(training) * 0.8)
 train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
 bag_tree <- randomForest(growth_2_6 ~ ., data = train,
-                         mtry = m_vals[which.min(apply(rmses, 2, median))],
+                         mtry = m_vals[which.min(apply(rmses, 2, mean))],
                          ntree = 500)
 bag_preds <- predict(bag_tree, newdata = validation)
 bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
@@ -292,5 +292,5 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 248:251] <- factor_vars
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv <- data.frame(id = id, growth_2_6 = bag_test_preds)
-# write.csv(test_csv, "model15predictions.csv", row.names = FALSE)
+write.csv(test_csv, "model15cpredictions.csv", row.names = FALSE)
 ```
