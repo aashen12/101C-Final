@@ -16,6 +16,7 @@ classoption: "aspectratio=169"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+training <- read.csv("training.csv")
 ```
 
 # Introduction
@@ -63,9 +64,39 @@ knitr::opts_chunk$set(echo = FALSE)
 
   - Only adjusted certain parameters at a time (number of trees, depth, and $\lambda$)
   
-## RMSEs
+## RMSE for Different Approaches
   
-- INSERT FIGURE HERE
+```{r, out.width='75%'}
+load("rmses_methods.RData")
+load("best_m_cv.RData")
+# par(mfrow = c(1, 2))
+names(all_rmses) <- c("LASSO", "Random Forest", "Bagging", "Boosting")
+barplot(all_rmses, ylim = c(0, 2), las = 1,
+        col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
+                rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
+        xlab = "Method", ylab = "RMSE",
+        cex.names = 0.5, las = 1)
+text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4), cex = .5)
+col_scheme <- c(rgb(0.5, 0, 0, 0.5),
+                rgb(0, 0.5, 0, 0.5),
+                rgb(0, 0, 0.5, 0.5),
+                rgb(0, 0.5, 0.5, 0.5),
+                rgb(0.5, 0, 0.5, 0.5))
+m_vals <- floor(seq(from = 1, to = 124, length.out = 20))
+```
+
+## Best $m$ for Random Forest
+
+```{r, out.width='75%'}
+plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses),
+     col = col_scheme[1],
+     xlab = "m", ylab = "RMSE", las = 1, cex.axis = 0.75)
+for (i in 2:5) {
+  lines(m_vals, rmses[i, ], col = col_scheme[i])
+}
+abline(v = m_vals[which.min(apply(rmses, 2, median))])
+```
+
 
 ## Candidate Model: Random Forest
 
