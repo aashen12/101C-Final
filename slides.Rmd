@@ -51,7 +51,7 @@ training <- read.csv("training.csv")
   
 - First fit a LASSO model for a sequence of candidate $\lambda$ values
  
-- Then select our optimal value of $\lambda$ as the one that is one standard deviation above the $\lambda$ value that resulted in the lowest test MSE
+- Then select our optimal value of $\lambda$ as the one that resulted in the lowest test MSE
 
 - Then extract the predicted coefficients in this LASSO model as our predictors for the candidate model
 
