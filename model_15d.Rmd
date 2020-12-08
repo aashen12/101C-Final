@@ -1,5 +1,5 @@
 ---
-title: "Model 15"
+title: "Model 15d"
 author: 'Ethan Allavarpu (UID: 405287603)'
 date: "12/3/2020"
 output: pdf_document
@@ -251,11 +251,12 @@ train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
 bag_tree <- randomForest(growth_2_6 ~ ., data = train,
                          mtry = m_vals[which.min(apply(rmses, 2, median))],
-                         ntree = 500)
+                         ntree = 500, importance = TRUE)
 bag_preds <- predict(bag_tree, newdata = validation)
 bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
 rmse <- sqrt(bag_mse)
 rmse
+varImpPlot(bag_tree, cex = 0.5, n.var = 10, type = 1)
 ```
 
 
@@ -292,5 +293,5 @@ factor_vars <- data.frame(lapply(factor_vars, factor))
 test[, 248:251] <- factor_vars
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv <- data.frame(id = id, growth_2_6 = bag_test_preds)
-# write.csv(test_csv, "model15predictions.csv", row.names = FALSE)
+write.csv(test_csv, "model15dpredictions.csv", row.names = FALSE)
 ```

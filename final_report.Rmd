@@ -42,18 +42,20 @@ A vast majority of our models were fit using either bagging or random forest. Ou
 
 The reason we chose bagging and random forest models over methods such as LASSO for final predictions and boosting are because bagging and random forest models produced lower RMSE values. INSERT FIGURE/HIST COMPARING RMSE OF BAGGING, RF, LASSO AVG, and BOOSTING
 
-Our best candidate model, `Model 15`, utilized the random forest approach. After selecting the variables that seemed important, we used our smaller data set to determine the best value of $m$. This $m$ corresponds to the number of variables the model randomly considers in each node of each decision tree produced. We utilized 5-fold cross-validation to pick the optimal value of $m$ for our final model used on the test data. We created our own cross-validation function to get a better estimate of the test RMSE and tried several potential values for $m$, ranging from 1 to $p$, to determine which $m$ produced the lowest RMSE. In the case of `Model 15`, we chose the best $m$ based on the minimum *median* RMSE (of the five folds). The reason we chose median and not mean is because with only five folds, a single extremely high or extremely low RMSE could significantly impact the average RMSE for a given $m$, and the median is more resistant to extreme values.
+Our best candidate model, `Model 15`, utilized the random forest approach. After selecting the variables that seemed important, we used our smaller data set to determine the best value of $m$. This $m$ corresponds to the number of variables the model randomly considers in each node of each decision tree produced. We utilized 5-fold cross-validation to pick the optimal value of $m$ for our final model used on the test data. We created our own cross-validation function to get a better estimate of the test RMSE and tried several potential values for $m$, ranging from 1 to $p$, to determine which $m$ produced the lowest RMSE. In the case of `Model 15`, we chose the best $m$ based on the minimum *median* RMSE (of the five folds). The reason we chose median and not mean is because with only five folds, a single high or low RMSE could significantly impact the average RMSE for a given $m$, and the median is more resistant to extreme values.
 
 Once determining the best $m$, we fit another random forest on 80% of the training data--this time with 500 trees as opposed to 50. We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test data set to submit to Kaggle.
 
 
 ## Results
 
-Our best evaluation metric with our primary model (`Model 15`) on the Kaggle public leaderboard was an RMSE of 1.39594. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285. Model `15b` only differs from `15` in the sense that $m = p$ as opposed to $m$ equaling the median RMSE. Here $p$ is the number of predictors.
+Our best evaluation metric with our primary model (`Model 15`) on the Kaggle public leaderboard was an RMSE of 1.39594. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285. Model `15b` only differs from `15` in the sense that $m = p$ (i.e., a complete bagging approach) as opposed to $m$ equaling the value which produced the lowest median RMSE (i.e., random forest approach). Here $p$ is the number of predictors.
 
 ## Conclusions
 
 We believe that our model performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we also used this value of $m$ to fit another random forest model with more trees at the end in order to verify the consistency of our model. 
+
+One thing we believe could have resulted in improved model performance was having greater background knowledge about YouTube and popularity growth as well as the CNN (convoluted neural network) and HOG characteristics for thumbnails. As we did not have a great deal of specific knowledge about YouTube, we did not necessarily have an intuitive sense of which predictors might perform better or worse; for data transformation in preprocessing we only changed things and added a predictor that we thought *may* have some influence.
 
 \pagebreak
 
