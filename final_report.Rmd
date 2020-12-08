@@ -35,7 +35,7 @@ In order to refine our subset of predictors, we use the LASSO to select signific
 
 We use LASSO to refine our predictors because this technique shrinks coefficient estimates to 0 and keeps the most important ones. As such, we are only interested in the predictors with nonzero coefficients. LASSO is unrelated to the our candidate model of random forest, and it was only used as a technique to refine the large number of predictors in the data set.
 
-### Model Fitting
+### Statistical Model
 
 A vast majority of our models were fit using either bagging or random forest. Our first model used LASSO to select predictors, but we did very little pre-processing and did not remove outliers. This did not result in a very successful model which is why we decided that pre-processing was necessary. We then implemented a mixture of bagging and random forest, adjusting certain parameters at  a time, such as the number of trees, their depth, as well as our $\lambda$ values.
 
@@ -46,9 +46,13 @@ Our best candidate model, `Model 15`, utilized the random forest approach. After
 Once determining the best $m$, we fit another random forest--this time with more trees (500 as opposed to 50) on 80% of the training data (20% was set aside as final validation data). We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test dataset to submit to Kaggle.
 
 
+## Results
+Our best evaluation metric with our primary model (`Model 15`) on the Kaggle public leaderboard was an RMSE of 1.39594. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285.
 
-ETHAN DISCUSS THE CANDIDATE MODELS HERE
+## Conclusions
+We believe that our model performed well because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE.
 
+\newpage
 
 ## Code Appendix
 
