@@ -114,7 +114,7 @@ abline(v = m_vals[which.min(apply(rmses, 2, median))])
 
 Kaggle scores: 
 
-(A) 1.39594
+(A) 1.39753
 
 (B) 1.40285
 
