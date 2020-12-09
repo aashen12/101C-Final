@@ -120,6 +120,14 @@ Kaggle scores:
 
 Model (B) only differs from (A) in the sense that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
 
+# Variable Importance
+
+```{r, message=FALSE, warning=FALSE, out.width="70%"}
+load("15d_tree.RData")
+library(randomForest)
+varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
+```
+
 # Conclusion
 
 - We believed our model performed well due to the fact that it works as an ensemble method
@@ -127,4 +135,7 @@ Model (B) only differs from (A) in the sense that $m = p$ as opposed to $m$ equa
   - Combines multiple individual models to get more accurate responses
 
 - By using cross-validation for our selection of $m$, we limit the potential effect of a random seed showing us an inaccurately good or bad RMSE
+
+- `TimeDay` custom variable is important - creating our own variables helped
+
 
