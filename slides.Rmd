@@ -10,17 +10,142 @@ output:
   beamer_presentation:
     theme: "Boadilla"
     colortheme: "seahorse"
-    slide_level: 2
+    slide_level: 3
 classoption: "aspectratio=169"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+training <- read.csv("training.csv", stringsAsFactors = FALSE)
+dim(training)
+any(is.na(training))
+var_types <- vapply(training, class, character(1))
+names(training)[-which(var_types %in% c("integer", "numeric"))]
+
+dates <- training$PublishedDate
+head(dates)
+split_dates <- strsplit(dates, "[:/ ]")
+head(split_dates)
+split_dates <- lapply(split_dates, as.numeric)
+years <- function(date) {
+  date[3]
+}
+yrs <- lapply(split_dates, years)
+unique(yrs)  # Only 2020
+new_time <- function(old_date) {
+  old_date <- as.numeric(old_date)
+  month <- old_date[1]
+  day <- old_date[2]
+  hr <- old_date[4]
+  minute <- old_date[5]
+  month_days <- c(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+  complete_months <- month - 1
+  if (complete_months > 0) {
+    complete_month_days <- sum(month_days[1:complete_months])
+  } else {
+    complete_month_days <- 0
+  }
+  total_days <- complete_month_days + day - 1
+  pre_hrs <- total_days * 24
+  total_hrs <- pre_hrs + hr
+  pre_min <- total_hrs * 60
+  final_time <- pre_min + minute 
+  final_time
+}
+processed_dates <- vapply(split_dates, new_time, numeric(1))
+time_of_day <- function(old_date) {
+  hr <- old_date[4]
+  minute <- old_date[5]
+  tod <- hr * 60 + minute
+  tod
+}
+day_time <- vapply(split_dates, time_of_day, numeric(1))
+training$PublishedDate <- processed_dates
+training$TimeDay <- day_time
+
+subs <- training[, 248:250]
+sub_final <- 3 - 3 * subs[[1]] - 2 * subs[[2]] - subs[[3]]
+views <- training[, 251:253]
+views_final <- 3 - 3 * views[[1]] - 2 * views[[2]] - views[[3]]
+growth <- training[, 254:256]
+growth_final <- 3 - 3 * growth[[1]] - 2 * growth[[2]] - growth[[3]]
+vids <- training[, 257:259]
+vid_final <- 3 - 3 * vids[[1]] - 2 * vids[[2]] - vids[[3]]
+growth_2_6 <- training$growth_2_6
+names(training)[c(1, 248:260)]
+training <- training[, -c(1, 248:260)]
+training <- data.frame(training, Num_Subscribers_Base = sub_final,
+                       Num_Views_Base = views_final, avg_growth = growth_final,
+                       count_vids = vid_final, growth_2_6 = growth_2_6)
+
+# See which variables have no variation (useless)
+var_sds <- vapply(training, sd, numeric(1))
+useless_vars <- names(training)[var_sds == 0]
+useless_vars
+training <- training[, !(names(training) %in% useless_vars)]
+
+# Remove highly correlated variables
+cor_mtx <- round(cor(training[, -ncol(training)]), 2)
+library(reshape2)
+library(ggplot2)
+melted_cor_mtx <- melt(cor_mtx)
+cor_vars <- which(abs(cor_mtx) > 0.9, arr.ind = TRUE)
+for (i in 1:nrow(cor_vars)) {
+  if (cor_vars[i, 1] >= cor_vars[i, 2]) {
+    cor_vars[i, ] <- rep(NA, 2)
+  }
+}
+
+all_na <- function(data) {
+  all(is.na(data))
+}
+unique_cor_vars <- apply(cor_vars, 1, all_na)
+cor_vars <- cor_vars[!unique_cor_vars, ]
+corr_vars <- unique(rownames(cor_vars))
+library(dplyr)
+training <- training[-which(training$views_2_hours > 2000000), ]
+training <- training[-which(training$hog_0 > 0.5), ]
+training <- training[-which(training$hog_1 > 0.35), ]
+training <- training[-which(training$hog_152 > 0.4), ]
+training <- training[-which(training$hog_182 > 0.4), ]
+training <- training[-which(training$hog_350 > 0.5), ]
+training <- training[-which(training$hog_364 > 0.6), ]
+training <- training[-which(training$hog_512 > 0.5), ]
+training <- training[which(training$hog_522 <= 0.5), ]
+training <- training[which(training$hog_584 <= 0.5), ]
+training <- training[which(training$hog_643 <= 0.8), ]
+training <- training[which(training$hog_649 <= 0.5), ]
+training <- training[which(training$hog_658 <= 0.5), ]
+training <- training[which(training$hog_705 <= 0.5), ]
+training <- training[which(training$hog_724 <= 0.5), ]
+training <- training[which(training$hog_774 <= 0.5), ]
+training <- training[which(training$hog_818 <= 0.4), ]
+training <- training[which(training$hog_828 <= 0.6), ]
+training <- training[which(training$hog_831 <= 0.5), ]
+training <- training[which(training$hog_832 <= 0.6), ]
+training <- training[which(training$hog_855 <= 0.5), ]
+training <- training[which(training$cnn_0 == 0), ]
+training <- training[which(training$cnn_36 == 0), ]
+training <- training[which(training$cnn_65 == 0), ]
+training <- training[which(training$punc_num_..18 == 0), ]
+training <- training[which(training$punc_num_..21 <= 1.5), ]
+training <- training[which(training$punc_num_..26 == 0), ]
+training <- training[which(training$punc_num_..27 == 0), ]
+
+new_var_sd <- vapply(training, sd, numeric(1))
+useless_vars <- names(training)[new_var_sd == 0]
+useless_vars
+training <- training[, !(names(training) %in% useless_vars)]
+
+factor_vars <- training[, 230:233]
+factor_vars <- data.frame(lapply(factor_vars, factor))
+training[, 230:233] <- factor_vars
+training <- training[, !(names(training) %in% corr_vars)]
 ```
 
 # Introduction
 
-## Introduction
+### Introduction
 
 - With the rise in popularity of YouTube, many people are now making a living off creating YouTube videos
 
@@ -28,9 +153,53 @@ knitr::opts_chunk$set(echo = FALSE)
 
 - We are interested in predicting the growth rate in video views between the **second** and **sixth** hour that a YouTube video is published
 
-# Pre-Processing
+# Methodology
 
-## Outliers
+## Preprocessing
+
+### Feature Transformation
+
+- Combined binary variables into a single factor with four levels
+  
+```{r, out.height="75%", fig.align="center"}
+par(mfrow = c(2, 2))
+boxplot(growth_2_6 ~ Num_Subscribers_Base, data = training,
+        col = c(rgb(0, 0, 0, .5),
+                rgb(0.5, 0, 0, .5),
+                rgb(0, 0.5, 0, .5),
+                rgb(0, 0, 0.5, .5)), pch = 19, cex = 0.25)
+boxplot(growth_2_6 ~ Num_Views_Base, data = training,
+        col = c(rgb(0, 0, 0, .5),
+                rgb(0.5, 0, 0, .5),
+                rgb(0, 0.5, 0, .5),
+                rgb(0, 0, 0.5, .5)), pch = 19, cex = 0.25)
+boxplot(growth_2_6 ~ avg_growth, data = training,
+        col = c(rgb(0, 0, 0, .5),
+                rgb(0.5, 0, 0, .5),
+                rgb(0, 0.5, 0, .5),
+                rgb(0, 0, 0.5, .5)), pch = 19, cex = 0.25)
+boxplot(growth_2_6 ~ count_vids, data = training,
+        col = c(rgb(0, 0, 0, .5),
+                rgb(0.5, 0, 0, .5),
+                rgb(0, 0.5, 0, .5),
+                rgb(0, 0, 0.5, .5)), pch = 19, cex = 0.25)
+```
+  
+### Feature Expansion
+
+- `TimeDay`: What time in the day was a video published? (made continuous)
+```{r, out.height="65%", fig.align="center"}
+plot(growth_2_6 ~ TimeDay, data = training, cex = 0.2, col = rgb(0,0,0,.25), pch = 19)
+symbols(c(-10,1250), c(-10, 3.5), circles = c(1,1), add = T, fg = rep("red", 2))
+segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
+         c(300, 900, 900, 300), c(3, 3, 0, 0),
+         col = "blue")
+```
+
+- Small upward cluster toward 1200 (lower clusters earlier in the day)
+
+
+### Outliers
 
 - Examined a univariate plot to look for stray points and removed them systematically
 
@@ -40,49 +209,50 @@ knitr::opts_chunk$set(echo = FALSE)
 
   - To avoid overfitting based on having too many predictors
   
-## Predictor Selection
+  
+### Predictor Selection
 
 - We use LASSO to select significant predictors
+
+  - LASSO pushes the coefficients of non-significant predictors to zero 
   
-  - Used to refine predictors from a large subset
+  - Keeps the most significant ones
   
-  - LASSO pushes non-significant predictors to zero and keeps the most significant ones
-  
-- First fit a LASSO model for a sequence of candidate $\lambda$ values
+- First, fit a LASSO model for a sequence of candidate $\lambda$ values
  
-- Then select our optimal value of $\lambda$ as the one that is one standard deviation above the $\lambda$ value that resulted in the lowest test MSE
+- Then select our optimal value of $\lambda$ as the one that resulted in the lowest test MSE
 
-- Then extract the predicted coefficients in this LASSO model as our predictors for the candidate model
+- Extract the predictors with nonzero coefficients in the LASSO model as our predictors for the candidate model
 
 
-# Model Fitting
+## Statistical Model
 
-## Overview
+### Overview
 
 - Most of our models were fit using bagging or random forest
 
   - Only adjusted certain parameters at a time (number of trees, depth, and $\lambda$)
   
 
-## Candidate Model: Random Forest
+### Candidate Model: Random Forest
 
-- After running LASSO to refine predictors, we use this smaller subset to find $m$ for random forest
+- After running LASSO to refine predictors, we use this smaller subset to find $m$ to use for random forest
 
-  - $m$ is the number of variables the model randomly considers in each node of each decision tree
+  - $m$: Number of variables randomly considered in each node of each decision tree
   
-  - Find optimal $m$ using 5-fold cross-validation and select $m$ corresponding to the lowest *median* RMSE of the 5 folds
+  - Find optimal $m$ with 5-fold cross-validation: select $m$ corresponding to the lowest *median* RMSE of the 5 folds
   
-  - Median is more preferable than mean due to the mean's sensitivity to extreme points
+    - Median is more preferable than mean due to the mean's sensitivity to extreme points
 
-- Once optimal $m$ is selected, fit another random forest model to 80% of the preprocessed training data
+- Once optimal $m$ is selected, fit random forest model to 80% of the preprocessed training data
 
-  - Fit this extra model to ensure the model was performing consistently
+  - Extra model and validation RMSE ensures consistent performance
   
-## Candidate Model: Bagging
+### Candidate Model: Bagging
 
-- Considered a bagging approach as well as random forest ($m = p$)
+- Considered a bagging approach ($m = p$)as a secondary model to random forest ($m = p$)
   
-## RMSEs
+### RMSEs
   
 ```{r, fig.height=5}
 load("rmses_methods.RData")
@@ -118,11 +288,11 @@ Kaggle scores:
 
 (B) 1.40285
 
-Model (B) only differs from (A) in the sense that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
+Model (B) (`Model 15b`) only differs from (A) (`Model 15d`) in that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
 
-# Variable Importance
+### Variable Importance
 
-```{r, message=FALSE, warning=FALSE, out.width="70%"}
+```{r, message=FALSE, warning=FALSE, out.width="70%", fig.align="center"}
 load("15d_tree.RData")
 library(randomForest)
 varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
@@ -136,6 +306,6 @@ varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predicto
 
 - By using cross-validation for our selection of $m$, we limit the potential effect of a random seed showing us an inaccurately good or bad RMSE
 
-- `TimeDay` custom variable is important - creating our own variables helped
+- `TimeDay` custom variable is important (11th out of 120+) - creating our own variables helped
 
 

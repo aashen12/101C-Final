@@ -7,7 +7,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.width = 7, fig.height = 4, fig.align = "center")
+knitr::opts_chunk$set(echo = FALSE, fig.width = 6.5, fig.height = 3.5, fig.align = "center")
 library(knitr)
 training <- read.csv("training.csv")
 ```
@@ -42,13 +42,13 @@ A vast majority of our models were fit using either bagging or random forest. Ou
 
 The reason we chose bagging and random forest models over methods such as LASSO for final predictions and boosting are because bagging and random forest models produced lower RMSE values (as described in the paragraph below and below plots).
 
-Our best candidate model, `Model 15`, utilized the random forest approach. After selecting the variables that seemed important, we used our smaller data set to determine the best value of $m$. This $m$ corresponds to the number of variables the model randomly considers in each node of each decision tree produced. We utilized 5-fold cross-validation to pick the optimal value of $m$ for our final model used on the test data. We created our own cross-validation function to get a better estimate of the test RMSE and tried several potential values for $m$, ranging from 1 to $p$, to determine which $m$ produced the lowest RMSE. In the case of `Model 15`, we chose the best $m$ based on the minimum *median* RMSE (of the five folds). The reason we chose median and not mean is because with only five folds, a single high or low RMSE could significantly impact the average RMSE for a given $m$, and the median is more resistant to extreme values.
+Our best candidate model, `Model 15d`, utilized the random forest approach. After selecting the variables that seemed important, we used our smaller data set to determine the best value of $m$. This $m$ corresponds to the number of variables the model randomly considers in each node of each decision tree produced. We utilized 5-fold cross-validation to pick the optimal value of $m$ for our final model used on the test data. We created our own cross-validation function to get a better estimate of the test RMSE and tried several potential values for $m$, ranging from 1 to $p$, to determine which $m$ produced the lowest RMSE. In the case of `Model 15d`, we chose the best $m$ based on the minimum *median* RMSE (of the five folds). The reason we chose median and not mean is because with only five folds, a single high or low RMSE could significantly impact the average RMSE for a given $m$, and the median is more resistant to extreme values.
 
 ```{r}
 load("rmses_15d_methods.RData")
 load("best_m_cv.RData")
 par(mfrow = c(1, 2))
-names(all_rmses) <- c("LASSO", "Random Forest", "Bagging", "Boosting")
+names(all_rmses) <- c("LASSO", "RF", "Bagging", "Boosting")
 barplot(all_rmses, ylim = c(0, 2), las = 1,
         col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
@@ -68,8 +68,8 @@ for (i in 2:5) {
   lines(m_vals, rmses[i, ], col = col_scheme[i])
 }
 abline(v = m_vals[which.min(apply(rmses, 2, median))])
-text(m_vals[which.min(apply(rmses, 2, median))] + 10,
-     1.9, labels = paste("m = ", m_vals[which.min(apply(rmses, 2, median))], sep = ""))
+text(m_vals[which.min(apply(rmses, 2, median))] - 10,
+     1.9, labels = paste("m = ", m_vals[which.min(apply(rmses, 2, median))], sep = ""), cex = 0.5)
 ```
 
 Upon determining the best $m$, we fit another random forest on 80% of the training data--this time with 500 trees as opposed to 50. We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test data set to submit to Kaggle.
@@ -77,19 +77,21 @@ Upon determining the best $m$, we fit another random forest on 80% of the traini
 
 ## Results
 
-Our best evaluation metric with our primary model (`Model 15`) on the Kaggle public leaderboard was an RMSE of 1.39594, which beat all four of the threshold models on the public leaderboard. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285, which also beats all four thresholds on the public leaderboard. `Model 15b` only differs from `Model 15` in the sense that $m = p$ (i.e., a complete bagging approach, $p$ is the number of predictors) as opposed to $m$ equaling the value which produced the lowest median RMSE (i.e., random forest approach).
+Our best evaluation metric with our primary model (`Model 15d`) on the Kaggle public leaderboard was an RMSE of 1.39594, which beat all four of the threshold models on the public leaderboard. Our secondary model (`Model 15b`) had a Kaggle public leaderboard RMSE of 1.40285, which also beats all four thresholds on the public leaderboard. `Model 15b` only differs from `Model 15d` in the sense that $m = p$ (i.e., a complete bagging approach, $p$ is the number of predictors) as opposed to $m$ equaling the value which produced the lowest median RMSE (i.e., random forest approach).
 
 ## Conclusions
 
-When comparing the results of our models on the public leaderboard to those on the private leaderboard, we noticed that `Model 15` ended with a private leaderboard score of ____ while `Model 15b` had a private leaderboard score of ____. FINISH AFTER COMPETITTION
+When comparing the results of our models on the public leaderboard to those on the private leaderboard, we noticed that `Model 15d` ended with a private leaderboard score of ____ while `Model 15b` had a private leaderboard score of ____. FINISH AFTER COMPETITTION
 
-We believe that our primary model (`Model 15`) performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we also used this value of $m$ to fit another random forest model with more trees at the end in order to verify the consistency of our model. 
+We believe that our primary model (`Model 15d`) performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we also used this value of $m$ to fit another random forest model with more trees at the end in order to verify the consistency of our model. 
 
 ```{r, message=FALSE, warning=FALSE, out.width="50%"}
 load("15d_tree.RData")
 library(randomForest)
 varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
 ```
+
+As shown in the variable importance plot of the 12 most influential predictors (out of the 120+ given to the random forest method), `avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base` and `TimeDay` all are in the top 10% most influential predictors, emphasizing that we made the right decision to combine the binary variables (`avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base`) and create a new one for the time of day at which the video was uploaded (`TimeDay`).
 
 One thing we believe could have resulted in improved model performance was having greater background knowledge about YouTube and popularity growth as well as the CNN (convoluted neural network) and HOG characteristics for thumbnails. The above plot, which shows the relative importance of the 10 most influential variables in our random forest approach, emphasizes how the CNN vairables played a distinct role in driving the predictions; removing them would have caused the model to perform much worse with respect to MSE (and thus RMSE). As we did not have a great deal of specific knowledge about YouTube, we did not necessarily have an intuitive sense of which predictors might perform better or worse; for data transformation in preprocessing we only changed things and added a predictor that we thought *may* have some influence.
 
@@ -338,7 +340,7 @@ train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
 bag_tree <- randomForest(growth_2_6 ~ ., data = train,
                          mtry = p,
-                         ntree = 500, importance = TRUE)
+                         ntree = 500)
 bag_preds <- predict(bag_tree, newdata = validation)
 bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
 bag_rmse <- sqrt(bag_mse)
@@ -419,5 +421,5 @@ test_csv <- data.frame(id = id, growth_2_6 = rf_test_preds)
 # write.csv(test_csv, "model15dpredictions.csv", row.names = FALSE)
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv_bag <- data.frame(id = id, growth_2_6 = bag_test_preds)
-# write.csv(test_csv_bag, "model15epredictions.csv", row.names = FALSE)
+# write.csv(test_csv_bag, "model15bpredictions.csv", row.names = FALSE)
 ```
