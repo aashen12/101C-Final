@@ -16,7 +16,6 @@ classoption: "aspectratio=169"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-training <- read.csv("training.csv")
 ```
 
 # Introduction
@@ -51,7 +50,7 @@ training <- read.csv("training.csv")
   
 - First fit a LASSO model for a sequence of candidate $\lambda$ values
  
-- Then select our optimal value of $\lambda$ as the one that resulted in the lowest test MSE
+- Then select our optimal value of $\lambda$ as the one that is one standard deviation above the $\lambda$ value that resulted in the lowest test MSE
 
 - Then extract the predicted coefficients in this LASSO model as our predictors for the candidate model
 
@@ -64,17 +63,36 @@ training <- read.csv("training.csv")
 
   - Only adjusted certain parameters at a time (number of trees, depth, and $\lambda$)
   
-## RMSE for Different Approaches
+
+## Candidate Model: Random Forest
+
+- After running LASSO to refine predictors, we use this smaller subset to find $m$ for random forest
+
+  - $m$ is the number of variables the model randomly considers in each node of each decision tree
   
-```{r, out.width='75%'}
+  - Find optimal $m$ using 5-fold cross-validation and select $m$ corresponding to the lowest *median* RMSE of the 5 folds
+  
+  - Median is more preferable than mean due to the mean's sensitivity to extreme points
+
+- Once optimal $m$ is selected, fit another random forest model to 80% of the preprocessed training data
+
+  - Fit this extra model to ensure the model was performing consistently
+  
+## Candidate Model: Bagging
+
+- Considered a bagging approach as well as random forest ($m = p$)
+  
+## RMSEs
+  
+```{r, fig.height=5}
 load("rmses_methods.RData")
 load("best_m_cv.RData")
-# par(mfrow = c(1, 2))
+par(mfrow = c(1, 2))
 names(all_rmses) <- c("LASSO", "Random Forest", "Bagging", "Boosting")
 barplot(all_rmses, ylim = c(0, 2), las = 1,
         col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
-        xlab = "Method", ylab = "RMSE",
+        xlab = "Method", ylab = "RMSE", main = "RMSEs for Various Approches",
         cex.names = 0.5, las = 1)
 text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4), cex = .5)
 col_scheme <- c(rgb(0.5, 0, 0, 0.5),
@@ -83,34 +101,14 @@ col_scheme <- c(rgb(0.5, 0, 0, 0.5),
                 rgb(0, 0.5, 0.5, 0.5),
                 rgb(0.5, 0, 0.5, 0.5))
 m_vals <- floor(seq(from = 1, to = 124, length.out = 20))
-```
-
-## Best $m$ for Random Forest
-
-```{r, out.width='75%'}
 plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses),
-     col = col_scheme[1],
+     col = col_scheme[1], main = "Best m for Random Forest",
      xlab = "m", ylab = "RMSE", las = 1, cex.axis = 0.75)
 for (i in 2:5) {
   lines(m_vals, rmses[i, ], col = col_scheme[i])
 }
 abline(v = m_vals[which.min(apply(rmses, 2, median))])
 ```
-
-
-## Candidate Model: Random Forest
-
-- After running LASSO to refine predictors, we use this smaller subset to find $m$ for random forest
-
-  - $m$ is the number of variables the model randomly considers in each node of each decision tree
-  
-  - Find optimal $m$ using 5-fold cross-validation and select $m$ corresponding to the *median* RMSE of the 5 folds
-  
-  - Median is more preferable than mean due to the mean's sensitivity to extreme points
-
-- Once optimal $m$ is selected, fit another random forest model to 80% of the preprocessed training data
-
-  - Fit this extra model to ensure the model was performing consistently
   
 # Results
 
@@ -120,23 +118,13 @@ Kaggle scores:
 
 (B) 1.40285
 
-Model (B) only differs from (A) in the sense that $m = p$ as opposed to $m$ equaling the median RMSE. Here $p$ is the number of predictors.
+Model (B) only differs from (A) in the sense that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
 
-# Discussion
+# Conclusion
 
 - We believed our model performed well due to the fact that it works as an ensemble method
 
   - Combines multiple individual models to get more accurate responses
 
 - By using cross-validation for our selection of $m$, we limit the potential effect of a random seed showing us an inaccurately good or bad RMSE
-
-
-
-
-
-
-
-
-
- 
 
