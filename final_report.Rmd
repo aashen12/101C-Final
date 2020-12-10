@@ -4,6 +4,8 @@ subtitle: "Stats 101C Lecture 3"
 author: "Andy Shen, Ethan Allavarpu"
 date: "Fall 2020"
 output: pdf_document
+bibliography: references.bib
+csl: apa-6th-edition.csl
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +16,7 @@ training <- read.csv("training.csv")
 
 ## Introduction
 
-The purpose of this regression analysis was to predict the growth percentage of a newly uploaded YouTube video during the 2nd through 6th hour of its publication (`growth_2_6`), which may potentially indicate the virality of a YouTube video (i.e., how quickly a video can go viral and "break the Internet." In this analysis, we employ a variety of regression techniques to a variety of attributes that make up a YouTube video. 
+The purpose of this regression analysis was to predict the growth percentage of a newly uploaded YouTube video during the 2nd through 6th hour of its publication (`growth_2_6`), which may potentially indicate the virality of a YouTube video (i.e., how quickly a video can go viral and "break the Internet," measuring user engagement) while also providing a rough guideline for the amount of revenue a creator may receive for a given video. In this analysis, we employ a variety of regression techniques to a variety of attributes that make up a YouTube video. 
 
 ## Methodology
 
@@ -22,11 +24,11 @@ The purpose of this regression analysis was to predict the growth percentage of 
 
 #### Data Cleaning
 
-We cleaned the data by plotting each predictor variable against `growth_2_6` and examined each univariate plot for possible associations between predictor variables and the growth percentage. We noticed that there existed many outliers or stray points that did not belong in the plot. We systematically removed these points, basing it off personal judgment as to whether the stray points would not assist in prediction. However, we do remove highly correlated variables as indicated by a correlation matrix heat map. For predictor pairs with a correlation coefficient over 0.9, we removed one of the two predictors to avoid issues with correlation.
+We cleaned the data by plotting each predictor variable against `growth_2_6` and examined each univariate plot for associations between predictor variables and the response. We noticed that there existed many outliers or stray points that did not belong in the plot. We systematically removed these points, basing it off personal judgment as to whether the points would not assist in prediction. We do remove highly correlated variables as indicated by a correlation matrix: for predictor pairs with a correlation coefficient over 0.9, we removed one of the two predictors to avoid issues with correlation.
 
-We also transformed multiple variables and added another variable prior to performing predictor selection, as we saw these as potentially useful for data on YouTube growth. The first adjustment we performed was on the `PublishedDate` variable. To this variable, we performed a transformation and added another variable. Initially, the data set had `PublishedDate` as a character variable; we wrote a function to transform this variable into a numeric variable in terms of minutes (since January $1^{st}$, 2020 00:00). This would allow us to see if there was any relationship between the date and `growth_2_6` because we made the variable continuous to match the general perception of time. Not only did we do this with respect to general time since January $1^{st}$, 2020 00:00, but we also *added* a variable (`TimeDay`) that has the time of day (in minutes from 00:00) during which a video was uploaded to YouTube. This could be useful because people may be more likely to watch YouTube videos in the evening (after school or work), so posting nearer to those times allows for greater growth between the second and sixth hours of a video's upload.
+We also transformed multiple variables and added another variable prior to performing predictor selection, as we saw these as potentially useful for data on YouTube growth. The first adjustment we performed was on the `PublishedDate` variable. Initially, the data set had `PublishedDate` as a character variable; we wrote a function to transform this variable into a numeric variable in terms of minutes (since January $1^{st}$, 2020 00:00 UTC). This would allow us to see if there was any relationship between the date and `growth_2_6` because we made the variable continuous to match the  perception of time. Not only did we do this with respect to general time since January $1^{st}$, 2020 00:00, but we also *added* a variable (`TimeDay`) that has the time of day (in minutes from 00:00 UTC) during which a video was uploaded to YouTube. This could be useful because people may be more likely to watch YouTube videos in the evening (after school or work), so posting nearer to those times allows for greater growth between the second and sixth hours of a video's upload.
 
-The second transformation we made was regarding the binary variables near the end of the data set. When looking at the feature descriptions, wee noticed that the `low`, `low_mid`, and `mid_high` versions of the four variables were natural ordinal variables (where `high` corresponds to values of 0 for the other three options). For these variables, we combined them into a single factor variable with four levels (0, 1, 2, 3) which correspond with `low`, `low_mid`, `mid_high`, and `high`. We did this transformation because bagging and random forest can split along multiple levels of a factor at a node (i.e. 0 and 1 to the left, 2 and 3 to the right) as long as all the levels are in a single variable, but if we left it as three separate binary variables, the bagging and random forest models could only split between one of the four levels and the three others since it can only look at a single variable for each node. Thus, by combining these variables into a factor with four levels, we allow the random forest and bagging models greater ability to distinguish between the four levels (`low`, `low_mid`, `mid_high`, `high`) and find nuances (such as 2-2 splits) for each of these statistics (`Num_Subscribers`, `Num_Views`, `avg_growth`, `count_views`).
+The second transformation we made was to the binary variables in the dataset. When looking at the feature descriptions, we noticed that the `low`, `low_mid`, and `mid_high` versions of the four variables were natural ordinal categorical variables (where `high` corresponds to values of 0 for the other three options). We combined these variables into a single factor variable with four levels (0 = `low`, 1 = `low_mid`, 2 = `mid_high`, and 3 = `high`). We did this transformation because bagging and random forests can split along multiple levels of a factor at a node (i.e. 0 and 1 to the left, 2 and 3 to the right) as long as the levels are of a single variable, but if we left it as three separate binary variables, the bagging and random forest models could only split between one level and the three others since it can only look at a single variable for each node [@ISLR]. By combining these variables into a single factor with four levels, we allow the random forest and bagging models greater ability to distinguish between the four levels (such as 2-2 splits) and find nuances for each of these statistics (`Num_Subscribers`, `Num_Views`, `avg_growth`, `count_views`), prompting us to use this coding scheme for these categorical variables.
 
 
 
@@ -104,7 +106,7 @@ One thing we believe could have resulted in improved model performance was havin
 
 **Andy**: Andy took the lead on the report and presentation side, helping establish the framework for both the report and slides and explaining most of the thought process of the group for the model-building process. He helped with identifying some key outliers and testing the LASSO, PCA, and boosting methods as potential models. Andy also helped Ethan write some of the code to execute model building and proposed some ideas for altering the model to improve its RMSE.
 
-\newpage
+\pagebreak
 
 ## Code Appendix
 ```{r, eval=FALSE, echo = TRUE}
@@ -308,8 +310,6 @@ create_best_m <- function(m_val, train_data = training, split = 0.8, folds = 5,
   }
   rmses
 }
-rmses <- list()
-length(rmses) <- 5
 set.seed(9738-16)
 rmses <- vapply(m_vals, create_best_m, numeric(5),
                 train_data = training,
@@ -423,3 +423,19 @@ bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv_bag <- data.frame(id = id, growth_2_6 = bag_test_preds)
 # write.csv(test_csv_bag, "model15bpredictions.csv", row.names = FALSE)
 ```
+
+\newpage
+
+## References
+
+\setlength{\parindent}{-0.2in}
+\setlength{\leftskip}{0.2in}
+\setlength{\parskip}{8pt}
+\noindent
+
+<div id="refs"></div>
+
+\setlength{\parindent}{0in}
+\setlength{\leftskip}{0in}
+\setlength{\parskip}{8pt}
+\noindent
