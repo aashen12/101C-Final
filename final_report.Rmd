@@ -9,7 +9,7 @@ csl: apa-6th-edition.csl
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.width = 6.5, fig.height = 3.5, fig.align = "center")
+knitr::opts_chunk$set(echo = FALSE, fig.width = 6.5, fig.height = 3.25, fig.align = "center")
 library(knitr)
 training <- read.csv("training.csv")
 ```
@@ -40,7 +40,7 @@ We use LASSO to refine our predictors because this technique shrinks coefficient
 
 ## Statistical Model
 
-A vast majority of our models were fit using either bagging or random forest. Our first model used LASSO to select predictors, but we did very little pre-processing and did not remove outliers. This did not result in a very successful model which is why we decided that pre-processing was necessary. We use least-squares as a preliminary model in order to examine whether an inflexible method such as regression would result in a low or high-bias model. Since the Kaggle score was around 1.65, we knew that, despite needing a more flexible model, we would not need something extremely flexible.
+A vast majority of our models were fit using either bagging or random forest. Our first model used LASSO to select predictors, but we did very little pre-processing and did not remove outliers. This did not result in a very successful model which is why we decided that pre-processing was necessary. We use least-squares as a preliminary model in order to examine whether an inflexible method such as regression would result in a model with extremely high bias. Since the Kaggle score was around 1.65, we knew that, though we would need a more flexible model, it need not be something extremely flexible.
 
 We then implemented a mixture of bagging and random forest, adjusting certain parameters at a time, such as the number of trees, their depth, as well as our $\lambda$ values. The reason we chose bagging and random forest models over methods such as LASSO for final predictions and boosting are because bagging and random forest models produced lower RMSE values (as described in the paragraph below and below plots).
 
@@ -254,13 +254,13 @@ for (i in seq_len(10)) {
   train_y <- train$growth_2_6
   test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
   lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
-  salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
+  growth_lasso <- glmnet(train_x, train_y, family = "gaussian",
                          alpha = 1, lambda = lambda_grid, standardize = TRUE)
-  salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
+  growth_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
                                lambda = lambda_grid, standardize = TRUE,
                                nfolds = 10)
-  lambda_1se <- salary_lasso_cv$lambda.min
-  lasso_test_preds <- predict(salary_lasso, newx = test_x, s = lambda_1se)
+  lambda_best <- growth_lasso_cv$lambda.min
+  lasso_test_preds <- predict(growth_lasso, newx = test_x, s = lambda_best)
   val_mses[i] <- mean((lasso_test_preds - validation$growth_2_6)^2)
 }
 mean(val_mses)
@@ -272,14 +272,14 @@ train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
 train_y <- train$growth_2_6
 test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
 lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
-salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
+growth_lasso <- glmnet(train_x, train_y, family = "gaussian",
                        alpha = 1, lambda = lambda_grid, standardize = TRUE)
-salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
+growth_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
                              lambda = lambda_grid, standardize = TRUE,
                              nfolds = 10)
-lambda_1se <- salary_lasso_cv$lambda.min
-lasso_coefs <- predict(salary_lasso, newx = test_x,
-                       s = lambda_1se, type = "coefficients")[, 1]
+lambda_best <- growth_lasso_cv$lambda.min
+lasso_coefs <- predict(growth_lasso, newx = test_x,
+                       s = lambda_best, type = "coefficients")[, 1]
 keep_vars <- names(lasso_coefs)[lasso_coefs != 0][-1]
 
 keep_vars <- c(keep_vars[1:120], names(training)[163:166])
@@ -291,7 +291,7 @@ train <- training[data_split, ]
 validation <- training[-data_split, ]
 train_bag <- train[, c(keep_vars, "growth_2_6")]
 # -1 from ncol() because one column is the response variable
-p <- ncol(train_bag) - 1 # Total number of predictors = 59
+p <- ncol(train_bag) - 1
 m_vals <- floor(seq(from = 1, to = p, length.out = 20))
 
 create_best_m <- function(m_val, train_data = training, split = 0.8, folds = 5,
@@ -340,7 +340,7 @@ train <- training[data_split, c(keep_vars, "growth_2_6")]
 validation <- training[-data_split, ]
 bag_tree <- randomForest(growth_2_6 ~ ., data = train,
                          mtry = p,
-                         ntree = 500)
+                         ntree = 500, importance = TRUE)
 bag_preds <- predict(bag_tree, newdata = validation)
 bag_mse <- mean((validation$growth_2_6 - bag_preds)^2)
 bag_rmse <- sqrt(bag_mse)
@@ -355,7 +355,7 @@ train <- training[data_split, ]
 validation <- training[-data_split, ]
 train_bag <- train[, c(keep_vars, "growth_2_6")]
 # -1 from ncol() because one column is the response variable
-p <- ncol(train_bag) - 1 # Total number of predictors = 59
+p <- ncol(train_bag) - 1
 for(i in seq_along(boost_rmses)) {
   boosted <- gbm(growth_2_6 ~ ., data = train_bag, distribution = "gaussian",
                  n.trees = 1000, shrinkage = lambdas[i], verbose = FALSE)
@@ -421,7 +421,7 @@ test_csv <- data.frame(id = id, growth_2_6 = rf_test_preds)
 # write.csv(test_csv, "model15dpredictions.csv", row.names = FALSE)
 bag_test_preds <- predict(bag_tree, newdata = test)
 test_csv_bag <- data.frame(id = id, growth_2_6 = bag_test_preds)
-# write.csv(test_csv_bag, "model15bpredictions.csv", row.names = FALSE)
+# write.csv(test_csv_bag, "model15epredictions.csv", row.names = FALSE)
 ```
 
 \newpage
