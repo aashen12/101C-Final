@@ -232,6 +232,10 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
 - Most of our models were fit using bagging or random forest
 
   - Only adjusted certain parameters at a time (number of trees, depth, and $\lambda$)
+
+- Preliminary least-squares model
+
+  - Kaggle score of ~1.65
   
 
 ### Candidate Model: Random Forest
