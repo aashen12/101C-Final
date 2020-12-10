@@ -34,9 +34,9 @@ The second transformation we made was to the binary variables in the dataset. Wh
 
 #### Predictor Selection
 
-In order to refine our subset of predictors, we use the LASSO to select significant predictors. We first fit a LASSO model for a sequence of candidate $\lambda$ values. From there, we select our optimal value of $\lambda$ as the one that is one standard deviation above the $\lambda$ value that resulted in the lowest test MSE. From these parameters, we extract the predicted coefficients in this LASSO model as our predictors for the candidate model.
+To refine our subset of predictors, we use the LASSO to select significant predictors. We fit a LASSO model for a sequence of candidate $\lambda$ values. From there, we select our optimal value of $\lambda$ as the one with the lowest cross-validation MSE. From this value of $\lambda$, we extract the features with non-zero predicted coefficients in this LASSO model as our predictors for the candidate model.
 
-We use LASSO to refine our predictors because this technique shrinks coefficient estimates to 0 and keeps the most important ones. As such, we are only interested in the predictors with nonzero coefficients. LASSO is unrelated to the our candidate model of random forest, and it was only used as a technique to refine the large number of predictors in the data set.
+We use LASSO to refine our predictors because this technique shrinks coefficient estimates to 0 and keeps the most important ones. As such, we are only interested in the predictors with nonzero coefficients. LASSO is unrelated to the our candidate model of random forest, and it was only used as a technique to refine the large number of predictors in the data set. The reason we chose LASSO over PCA is because PCA does not work well with categorical variables, while LASSO establishes dummy variables: if any of the dummy variables were selected, we kept the entire factor with all four levels.
 
 ## Statistical Model
 
@@ -55,7 +55,7 @@ barplot(all_rmses, ylim = c(0, 2), las = 1,
         col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
         xlab = "Method", ylab = "RMSE", main = "RMSEs for Various Approches",
-        cex.names = 0.5, las = 1)
+        cex.names = 0.5, las = 1, cex.main = 0.5, cex.lab = .5)
 text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4), cex = .5)
 col_scheme <- c(rgb(0.5, 0, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5),
@@ -65,7 +65,7 @@ col_scheme <- c(rgb(0.5, 0, 0, 0.5),
 m_vals <- floor(seq(from = 1, to = 124, length.out = 20))
 plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses),
      col = col_scheme[1], main = "Best m for Random Forest",
-     xlab = "m", ylab = "RMSE", las = 1, cex.axis = 0.75)
+     xlab = "m", ylab = "RMSE", las = 1, cex.axis = 0.5, cex.main = 0.5, cex.lab = 0.5)
 for (i in 2:5) {
   lines(m_vals, rmses[i, ], col = col_scheme[i])
 }
