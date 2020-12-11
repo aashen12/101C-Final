@@ -9,7 +9,7 @@ csl: apa-6th-edition.csl
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.width = 6.5, fig.height = 3.25, fig.align = "center")
+knitr::opts_chunk$set(echo = FALSE, fig.width = 6.5, fig.height = 3, fig.align = "center")
 library(knitr)
 training <- read.csv("training.csv")
 ```
@@ -34,7 +34,7 @@ The second transformation we made was to the binary variables in the dataset. Wh
 
 #### Predictor Selection
 
-To refine our subset of predictors, we use the LASSO to select significant predictors. We fit a LASSO model for a sequence of candidate $\lambda$ values. From there, we select our optimal value of $\lambda$ as the one with the lowest cross-validation MSE. From this value of $\lambda$, we extract the features with non-zero predicted coefficients in this LASSO model as our predictors for the candidate model.
+To refine our subset of predictors, we use the LASSO to select significant predictors. We fit a LASSO model for a sequence of candidate $\lambda$ values, from $10^{-5}$ to $10^{5}$: larger values of $\lambda$ lead to greater shrinkage and more selection, while smaller values of $\lambda$ have less shrinkage and are more similar to OLS. From there, we select our optimal value of $\lambda = 10^{-2}=0.01$  as the one with the lowest cross-validation MSE. From this value of $\lambda$, we extract the features with non-zero predicted coefficients in this LASSO model as our predictors for the candidate model.
 
 We use LASSO to refine our predictors because this technique shrinks coefficient estimates to 0 and keeps the most important ones. As such, we are only interested in the predictors with nonzero coefficients. LASSO is unrelated to the our candidate model of random forest, and it was only used as a technique to refine the large number of predictors in the data set. The reason we chose LASSO over PCA is because PCA does not work well with categorical variables, while LASSO establishes dummy variables: if any of the dummy variables were selected, we kept the entire factor with all four levels.
 
@@ -54,8 +54,9 @@ names(all_rmses) <- c("LASSO", "RF", "Bagging", "Boosting")
 barplot(all_rmses, ylim = c(0, 2), las = 1,
         col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
-        xlab = "Method", ylab = "RMSE",
-        cex.names = 0.5, las = 1, cex.main = 0.5, cex.lab = .5, cex.axis = .5)
+        xlab = "Method", ylab = "RMSE", main = "Validation RMSEs for Various Methods",
+        cex.names = 0.5, las = 1, cex.main = 0.75, cex.lab = .75, cex.axis = .5,
+        mgp = c(2,1,0))
 text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4), cex = .5)
 col_scheme <- c(rgb(0.5, 0, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5),
@@ -65,7 +66,10 @@ col_scheme <- c(rgb(0.5, 0, 0, 0.5),
 m_vals <- floor(seq(from = 1, to = 124, length.out = 20))
 plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses),
      col = col_scheme[1],
-     xlab = "m", ylab = "RMSE", las = 1, cex.axis = 0.5, cex.main = 0.5, cex.lab = 0.5)
+     xlab = "m", ylab = "RMSE", las = 1,
+     main = "Best m for Random Forest (Cross-Validation)",
+     cex.axis = 0.5, cex.main = 0.75, cex.lab = 0.75,
+     mgp = c(2,1,0))
 for (i in 2:5) {
   lines(m_vals, rmses[i, ], col = col_scheme[i])
 }
@@ -88,13 +92,13 @@ When comparing the results of our models on the public and private leaderboards,
 We believe that our primary model (`Model 15d`) performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we used this value of $m$ to fit another random forest model with more trees at the end to verify the consistency of our model. The reason random forest (`15d`) performed better than bagging (`15e`) was that it limits the bias that bagging introduces by randomly selecting only a subset variables from which to split at a given node, providing for trees that are slightly more independent from one another.
 
 
-```{r, message=FALSE, warning=FALSE, out.width="50%"}
+```{r, message=FALSE, warning=FALSE, out.width="75%"}
 load("15d_tree.RData")
 library(randomForest)
 varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
 ```
 
-As shown in the variable importance plot of the 12 most influential predictors (out of the 120+ given to the random forest method), `avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base` and `TimeDay` all are in the top 10% most influential predictors, emphasizing that we made the right decision to combine the binary variables (`avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base`) and create a new one for the time of day at which the video was uploaded (`TimeDay`).
+As shown in the variable importance plot of the 12 most influential predictors (from the 124 given to our random forest), `avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base` and `TimeDay` are all in the top 10% for influential predictors ($1^{\text{st}}$, $3^{\text{rd}}$, $6^{\text{th}}$, $8^{\text{th}}$, and $11^{\text{th}}$, respectively). We made a good decision to combine the binary variables (`avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base`) and create a new one for the time of day of an upload (`TimeDay`); our feature transformation and creation proved useful in aiding our model's strong performance on the public leaderboard.
 
 One thing we believe could have resulted in improved model performance was having greater knowledge about YouTube and popularity growth as well as the CNN and HOG characteristics for thumbnails. The above plot, which shows the relative importance of the 12 most influential variables in our random forest, emphasizes how the CNN variables played a distinct role in driving the predictions; removing them would have caused the model to perform distinctly worse with respect to MSE (and thus RMSE). As we did not have a great deal of specific knowledge about YouTube, we did not necessarily have an intuitive sense of which predictors might be important; for  preprocessing we only changed things and added a predictor that we thought *may* have some influence.
 
@@ -263,7 +267,7 @@ for (i in seq_len(10)) {
   train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
   train_y <- train$growth_2_6
   test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
-  lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
+  lambda_grid <- 10^(seq(from = 5, to = -5, length.out = 101))
   growth_lasso <- glmnet(train_x, train_y, family = "gaussian",
                          alpha = 1, lambda = lambda_grid, standardize = TRUE)
   growth_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
@@ -281,7 +285,7 @@ validation <- training[-data_split, ]
 train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
 train_y <- train$growth_2_6
 test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
-lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
+lambda_grid <- 10^(seq(from = 5, to = -5, length.out = 101))
 growth_lasso <- glmnet(train_x, train_y, family = "gaussian",
                        alpha = 1, lambda = lambda_grid, standardize = TRUE)
 growth_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,

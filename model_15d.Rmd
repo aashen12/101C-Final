@@ -161,7 +161,7 @@ for (i in seq_len(10)) {
   train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
   train_y <- train$growth_2_6
   test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
-  lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
+  lambda_grid <- 10^(seq(from = 5, to = -5, length.out = 101))
   salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
                          alpha = 1, lambda = lambda_grid, standardize = TRUE)
   salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
@@ -179,7 +179,7 @@ validation <- training[-data_split, ]
 train_x <- model.matrix(growth_2_6 ~ ., data = train)[, -1]
 train_y <- train$growth_2_6
 test_x <- model.matrix(growth_2_6 ~ ., data = validation)[, -1]
-lambda_grid <- 10^(seq(from = 10, to = -2, length.out = 100))
+lambda_grid <- 10^(seq(from = 5, to = -5, length.out = 101))
 salary_lasso <- glmnet(train_x, train_y, family = "gaussian",
                          alpha = 1, lambda = lambda_grid, standardize = TRUE)
 salary_lasso_cv <- cv.glmnet(train_x, train_y, family = "gaussian", alpha = 1,
