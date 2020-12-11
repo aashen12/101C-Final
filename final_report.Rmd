@@ -330,10 +330,24 @@ rmses <- vapply(m_vals, create_best_m, numeric(5),
                 num_tree = 50)
 
 # Plot m vs. RMSEs for random forests
-plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses))
+col_scheme <- c(rgb(0.5, 0, 0, 0.5),
+                rgb(0, 0.5, 0, 0.5),
+                rgb(0, 0, 0.5, 0.5),
+                rgb(0, 0.5, 0.5, 0.5),
+                rgb(0.5, 0, 0.5, 0.5))
+plot(m_vals, rmses[1, ], type = "l", ylim = range(rmses),
+     col = col_scheme[1],
+     xlab = "m", ylab = "RMSE", las = 1,
+     cex.axis = 0.5, cex.main = 0.5, cex.lab = 0.5)
 for (i in 2:5) {
-  lines(m_vals, rmses[i, ], col = i)
+  lines(m_vals, rmses[i, ], col = col_scheme[i])
 }
+abline(v = m_vals[which.min(apply(rmses, 2, median))])
+text(m_vals[which.min(apply(rmses, 2, median))] - 10,
+     1.9,
+     labels = paste("m = ",
+                    m_vals[which.min(apply(rmses, 2, median))],
+                    sep = ""), cex = 0.5)
 
 # Choose value of m with lowest median RMSE
 set.seed(129)
@@ -397,12 +411,14 @@ boost_rmse
 
 # Plot RMSEs of various methods
 all_rmses <- c(sqrt(mean(val_mses)), rmse, bag_rmse, boost_rmse)
-names(all_rmses) <- c("LASSO", "Random Forest", "Bagging", "Boosting")
+names(all_rmses) <- c("LASSO", "RF", "Bagging", "Boosting")
 barplot(all_rmses, ylim = c(0, 2), las = 1,
         col = c(rgb(0.5, 0, 0, 0.5), rgb(0, 0.5, 0, 0.5),
                 rgb(0, 0.5, 0, 0.5), rgb(0.5, 0, 0, 0.5)),
-        xlab = "Method", ylab = "RMSE", main = "RMSEs for Various Approches")
-text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4))
+        xlab = "Method", ylab = "RMSE",
+        cex.names = 0.5, las = 1, cex.main = 0.5, cex.lab = .5, cex.axis = .5)
+text(c(.7, 1.9, 3.1, 4.3), all_rmses - 0.1, labels = round(all_rmses, 4),
+     cex = .5)
 
 varImpPlot(rf_tree, type = 1, scale = TRUE, n.var = 12,
            main = "Important Predictors for Random Forest Model")
