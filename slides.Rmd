@@ -153,9 +153,7 @@ training <- training[, !(names(training) %in% corr_vars)]
 
 - We are interested in predicting the growth rate in video views between the **second** and **sixth** hour that a YouTube video is published
 
-# Methodology
-
-## Preprocessing
+# Preprocessing
 
 ### Feature Transformation
 
@@ -254,7 +252,7 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
   
 ### Candidate Model: Bagging
 
-- Considered a bagging approach ($m = p$)as a secondary model to random forest ($m = p$)
+- Considered a bagging approach ($m = p$) as a secondary model to random forest
   
 ### RMSEs
   
