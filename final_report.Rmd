@@ -77,7 +77,6 @@ abline(v = m_vals[which.min(apply(rmses, 2, median))])
 text(m_vals[which.min(apply(rmses, 2, median))] - 10,
      1.9, labels = paste("m = ", m_vals[which.min(apply(rmses, 2, median))], sep = ""), cex = 0.5)
 ```
-
 Upon determining the best $m$, we fit another random forest on 80% of the training data--this time with 500 trees as opposed to 50. We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test data set to submit to Kaggle.
 
 
@@ -87,15 +86,15 @@ Our best evaluation metric with our primary model (`Model 15d`) on the Kaggle pu
 
 ## Conclusions
 
-When comparing the results of our models on the public and private leaderboards, we noticed that `Model 15d` ended with a private leaderboard score of ____ while `Model 15e` had a private leaderboard score of ____. FINISH AFTER COMPETITION
+For the private Kaggle leaderboard, `Model 15d` had a private score of 1.41019, while `Model 15e` had a private score of 1.41321--both models beat all four thresholds on the private leaderboard as well.
 
 We believe that our primary model (`Model 15d`) performed successfully because it works as an ensemble method, meaning that it combines multiple individual models to get more accurate responses. By using cross-validation for our selection of our best value of $m$, we limited the potential effect of a random seed showing us an inaccurately good or inaccurately bad RMSE. Moreover, we used this value of $m$ to fit another random forest model with more trees at the end to verify the consistency of our model. The reason random forest (`15d`) performed better than bagging (`15e`) was that it limits the bias that bagging introduces by randomly selecting only a subset variables from which to split at a given node, providing for trees that are slightly more independent from one another.
 
 
-```{r, message=FALSE, warning=FALSE, out.width="75%"}
+```{r, message=FALSE, warning=FALSE, out.width="90%"}
 load("15d_tree.RData")
 library(randomForest)
-varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
+varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.6, main = "Important Predictors for Random Forest Model")
 ```
 
 As shown in the variable importance plot of the 12 most influential predictors (from the 124 given to our random forest), `avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base` and `TimeDay` are all in the top 10% for influential predictors ($1^{\text{st}}$, $3^{\text{rd}}$, $6^{\text{th}}$, $8^{\text{th}}$, and $11^{\text{th}}$, respectively). We made a good decision to combine the binary variables (`avg_growth`, `Num_Subscribers_Base`, `count_vids`, `Num_Views_Base`) and create a new one for the time of day of an upload (`TimeDay`); our feature transformation and creation proved useful in aiding our model's strong performance on the public leaderboard.
