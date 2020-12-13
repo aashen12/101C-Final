@@ -204,12 +204,14 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
 - Examined a univariate plot to look for stray points and removed them systematically
 
   - Based off personal judgment and inference on the effect of the stray points
+  
+- Remove variables with standard deviation of 0
  
 - We also remove highly correlated variables as indicated by a heat map
 
   - To avoid overfitting based on having too many predictors
-  
-  
+
+
 ### Predictor Selection
 
 - We use LASSO to select significant predictors
