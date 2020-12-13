@@ -187,7 +187,8 @@ boxplot(growth_2_6 ~ count_vids, data = training,
   
 ### Feature Expansion
 
-- `TimeDay`: What time in the day was a video published? (made continuous)
+- `TimeDay`: What time in the day was a video published?
+  - Created continuous variable
 ```{r, out.height="65%", fig.align="center"}
 plot(growth_2_6 ~ TimeDay, data = training, cex = 0.2, col = rgb(0,0,0,.25), pch = 19)
 symbols(c(-10,1250), c(-10, 3.5), circles = c(1,1), add = T, fg = rep("red", 2))
@@ -196,7 +197,7 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
          col = "blue")
 ```
 
-- Small upward cluster toward 1200 (lower clusters earlier in the day)
+- Small upward trend toward cluster around 1200 (lower clusters earlier in the day)
 
 
 ### Outliers
@@ -232,6 +233,8 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
 - Most of our models were fit using bagging or random forest
 
   - Only adjusted certain parameters at a time (number of trees and $m$)
+  
+  - Performed better than LASSO, boosting
 
 - Preliminary least-squares model
 
@@ -246,13 +249,15 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
   
     - Median is more preferable than mean due to the mean's sensitivity to extreme points
 
-- Once optimal $m$ is selected, fit random forest model to 80% of the preprocessed training data
+- Once optimal $m$ is selected, fit random forest model to 80% of the processed training data
 
   - Extra model and validation RMSE ensures consistent performance
   
 ### Candidate Model: Bagging
 
-- Considered a bagging approach ($m = p$) as a secondary model to random forest
+- Considered a bagging approach ($m = p$) as a secondary model to random forest (as opposed to $m$ equaling the value with the lowest median RMSE)
+
+  - $p$: Number of predictors
   
 ### RMSEs
   
@@ -284,26 +289,25 @@ abline(v = m_vals[which.min(apply(rmses, 2, median))])
   
 # Results
 
-Kaggle scores: 
+```{r, out.width = "90%"}
+scores <- data.frame(Model = c("Primary", "Secondary"),
+                     Public = c(1.39753, 1.40285),
+                     Private = c(1.41019, 1.41321))
+knitr::kable(scores, caption = "Kaggle Scores", aalign = "ccc")
+```
 
-(A) 1.39753 (1.41019)
-
-(B) 1.40285 (1.41321)
-
-Model (B) (`Model 15e`) only differs from (A) (`Model 15d`) in that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
-
+- Both models beat all four thresholds on the public and private leaderboards
 
 # Conclusion
 
 - We believed our model performed well due to the fact that it works as an ensemble method
 
-  - Combines multiple individual models to get more accurate responses
+  - Combines multiple individual models to get more accurate responses (averages predictions)
 
 - By using cross-validation for our selection of $m$, we limit the potential effect of a random seed showing us an inaccurately good or bad RMSE
 
-- `TimeDay` custom variable is important (11th out of 120+) - creating our own variables helped
+- Feature transformation and expansion useful
 
-- All 4 factor variables in the top 12
 
 ### Variable Importance
 
