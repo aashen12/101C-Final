@@ -1,8 +1,7 @@
 ---
 title: "Final Project - The Gould-en Rule"
-subtitle: "Stats 101C Lecture 3"
+subtitle: "Stats 101C Lecture 3 - Fall 2020"
 author: "Andy Shen, Ethan Allavarpu"
-date: "Fall 2020"
 output: pdf_document
 bibliography: references.bib
 csl: apa-6th-edition.csl
