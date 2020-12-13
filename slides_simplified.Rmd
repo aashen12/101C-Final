@@ -236,7 +236,7 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
   
   - Performed better than LASSO, boosting
 
-- Preliminary least-squares model
+- Preliminary model
 
   - Kaggle score of ~1.65
   
