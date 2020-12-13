@@ -77,7 +77,9 @@ abline(v = m_vals[which.min(apply(rmses, 2, median))])
 text(m_vals[which.min(apply(rmses, 2, median))] - 10,
      1.9, labels = paste("m = ", m_vals[which.min(apply(rmses, 2, median))], sep = ""), cex = 0.5)
 ```
-Upon determining the best $m$, we fit another random forest on 80% of the training data--this time with 500 trees as opposed to 50. We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test data set to submit to Kaggle.
+
+
+Upon determining the best $m$ (85), we fit another random forest on 80% of the training data--this time with 500 trees as opposed to 50. We did this to ensure there weren't any final "surprises" when fitting a model with regards to RMSE. After fitting the random forest for the given $m$ and checking the validation RMSE, we predicted values of `growth_2_6` for the test data set to submit to Kaggle.
 
 
 ## Results
@@ -107,6 +109,7 @@ One thing we believe could have resulted in improved model performance was havin
 \pagebreak
 
 ## Statement of Contribution
+
 **Ethan**: Ethan took the lead on the model-building side, primarily testing the bagging and random forest approaches on the data set. He also helped with transforming and creating new features for said model to improve its performance, both in cross-validation as well as the public leaderboard on Kaggle. After model completion, Ethan contributed to the report and slides by helping explain some of the preprocessing steps and adding figures/graphs.
 
 **Andy**: Andy took the lead on the report and presentation side, helping establish the framework for both the report and slides and explaining most of the thought process of the group for the model-building process. He helped with identifying some key outliers and testing the LASSO, PCA, and boosting methods as potential models. Andy also helped Ethan write some of the code to execute model building and proposed some ideas for altering the model to improve its RMSE.
@@ -114,6 +117,7 @@ One thing we believe could have resulted in improved model performance was havin
 \pagebreak
 
 ## Code Appendix
+
 ```{r, eval=FALSE, echo = TRUE}
 training <- read.csv("training.csv", stringsAsFactors = FALSE)
 dim(training)
