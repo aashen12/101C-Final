@@ -153,7 +153,9 @@ training <- training[, !(names(training) %in% corr_vars)]
 
 - We are interested in predicting the growth rate in video views between the **second** and **sixth** hour that a YouTube video is published
 
-# Preprocessing
+# Methodology
+
+## Preprocessing
 
 ### Feature Transformation
 
@@ -216,7 +218,7 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
   
   - Keeps the most significant ones
   
-- Fit a LASSO model and select our optimal value of $\lambda$ as the one that resulted in the **lowest test MSE**
+- Fit a LASSO model and select our optimal value of $\lambda$ as the one that resulted in the **lowest cross-validation MSE** ($10^{-2}$)
 
 - Extract the predictors with nonzero coefficients in the LASSO model as our predictors for the candidate model
 
@@ -227,7 +229,7 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
 
 - Most of our models were fit using bagging or random forest
 
-  - Only adjusted certain parameters at a time (number of trees, depth, and $\lambda$)
+  - Only adjusted certain parameters at a time (number of trees and $m$)
 
 - Preliminary least-squares model
 
@@ -236,7 +238,7 @@ segments(c(300, 300, 900, 900), c(0, 3, 3, 0),
 
 ### Candidate Model: Random Forest
 
-- After running LASSO to refine predictors, we use this smaller subset to find $m$ to use for random forest
+- Use subset to choose $m$ for random forest
 
   - Find optimal $m$ with 5-fold cross-validation: select $m$ corresponding to the lowest *median* RMSE of the 5 folds
   
@@ -282,19 +284,12 @@ abline(v = m_vals[which.min(apply(rmses, 2, median))])
 
 Kaggle scores: 
 
-(A) 1.39753
+(A) 1.39753 (1.41019)
 
-(B) 1.40285
+(B) 1.40285 (1.41321)
 
-Model (B) (`Model 15b`) only differs from (A) (`Model 15d`) in that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
+Model (B) (`Model 15e`) only differs from (A) (`Model 15d`) in that $m = p$ as opposed to $m$ equaling the value with the lowest median RMSE. Here $p$ is the number of predictors.
 
-### Variable Importance
-
-```{r, message=FALSE, warning=FALSE, out.width="70%", fig.align="center"}
-load("15d_tree.RData")
-library(randomForest)
-varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
-```
 
 # Conclusion
 
@@ -306,4 +301,13 @@ varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predicto
 
 - `TimeDay` custom variable is important (11th out of 120+) - creating our own variables helped
 
+- All 4 factor variables in the top 12
+
+### Variable Importance
+
+```{r, message=FALSE, warning=FALSE, out.width="70%", fig.align="center"}
+load("15d_tree.RData")
+library(randomForest)
+varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
+```
 
