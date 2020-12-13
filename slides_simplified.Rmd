@@ -314,6 +314,6 @@ knitr::kable(scores, caption = "Kaggle Scores", aalign = "ccc")
 ```{r, message=FALSE, warning=FALSE, out.width="70%", fig.align="center"}
 load("15d_tree.RData")
 library(randomForest)
-varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model")
+varImpPlot(rf_tree, n.var = 12, type = 1, cex = 0.75, main = "Important Predictors for Random Forest Model", col = c("black", "red", "black", "black", "red", "black", "red", "black", "black", "red"))
 ```
 
